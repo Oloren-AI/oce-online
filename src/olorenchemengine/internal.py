@@ -207,13 +207,69 @@ def log_arguments(func: Callable[..., None]) -> Callable[..., None]:
                     kwargs.update({k: v})
             self.args = args
             self.kwargs = {k: v for k, v in kwargs.items() if not k in ignored_kwargs}
-        return func(self, *args, **kwargs)
+        if runtime.is_local:  # don't actually init if not local
+            return func(self, *args, **kwargs)
+        else:
+            import uuid
+            REMOTE_ID = uuid.uuid4()
+            self.REMOTE_ID = REMOTE_ID
+            if "BaseRemoteSymbol" in str(type(self)):
+                return func(self, *args, **kwargs)
+            else:
+                print(f"CREATE {REMOTE_ID} = {type(self)}(args={args}, kwargs={kwargs})")
+                def test(x, y):
+                    print("Adding is happening!")
+                self.__add__ = test
 
     wrapper.__wrapped__ = func
 
     return wrapper
 
-class BaseClass(ABC):
+
+class Runtime:
+    def __init__(self) -> None:
+        self.runtime = "local"
+
+    def change_runtime(self, runtime: str):
+        self.runtime = runtime
+
+    @property
+    def is_local(self):
+        return self.runtime == "local"
+
+runtime = Runtime()
+
+class BaseRemoteSymbol(ABC):
+    @log_arguments
+    def __init__(self, name, parent) -> None:
+        if runtime.is_local:
+            raise RuntimeError("Cannot instantiate RemoteObject in local runtime")
+        else:
+            self.REMOTE_SYMBOL_NAME = name
+            self.REMOTE_PARENT = parent
+            self.REMOTE_CHILDREN = {}
+            print(f"SYMBOL {self.REMOTE_ID} = {self.REMOTE_PARENT}.{self.REMOTE_SYMBOL_NAME}")
+
+
+    def __getattribute__(self, key):
+        print(key)
+        if runtime.is_local:
+            raise RuntimeError("Cannot call RemoteObject on local runtime")
+        else: # remote runtime
+            if key.startswith("REMOTE") or key.startswith("__"):
+                return object.__getattribute__(self, key)
+            if hasattr(self, "REMOTE_CHILDREN") and key in self.REMOTE_CHILDREN:
+                return self.REMOTE_CHILDREN[key]
+            else:
+                try:
+                    object.__getattribute__(self, key)  # ensure the attribute exists (otherwise throw error)
+                except AttributeError:
+                    print(f"Warning - {key} may not be a valid attribute of {self.__class__.__name__} - continuing anyway")
+                if not hasattr(self, "REMOTE_CHILDREN"): self.REMOTE_CHILDREN = {}
+                self.REMOTE_CHILDREN[key] =  BaseRemoteSymbol(key, self)
+                return self.REMOTE_CHILDREN[key]
+
+class BaseClass(BaseRemoteSymbol):
     """BaseClass is the base class for all models.
 
     All classes in Oloren ChemEngine should inherit from BaseClass to enable for universal saving and loading of both
@@ -268,6 +324,12 @@ class BaseClass(ABC):
         obj_copy = create_BC(parameterize(self))
         obj_copy._load(self._save())
         return obj_copy
+
+    def __getattribute__(self, key):
+        if runtime.is_local:
+            return object.__getattribute__(self, key)
+        else: # remote runtime
+            super().__getattribute__(key)
 
 
 def parameterize(object: Union[BaseClass, list, int, float, str, None]) -> dict:
