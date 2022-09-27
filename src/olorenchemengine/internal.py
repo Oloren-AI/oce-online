@@ -14,14 +14,16 @@ from google.oauth2.credentials import Credentials
 import sys
 import olorenchemengine
 
-sys.modules["olorenautoml"] = olorenchemengine # important for backwards compatibility of some models
+sys.modules["olorenautoml"] = olorenchemengine  # important for backwards compatibility of some models
+
 
 def all_subclasses(cls):
-    """ Helper function to return all subclasses of class"""
+    """Helper function to return all subclasses of class"""
     return set(cls.__subclasses__()).union([s for c in cls.__subclasses__() for s in all_subclasses(c)])
 
+
 class OASConnector:
-    """ Class which links oce to OAS and can move data between them using Firestore and an API"""
+    """Class which links oce to OAS and can move data between them using Firestore and an API"""
 
     def __init__(self) -> None:
         self.storage = None
@@ -124,7 +126,6 @@ class OASConnector:
 
         return out
 
-
     def upload_model(self, model, model_name):
         self.authenticate()
 
@@ -153,9 +154,11 @@ class OASConnector:
 
         return out
 
+
 oas_connector = OASConnector()
 
 ignored_kwargs = ["map_location", "num_workers"]
+
 
 def download_public_file(path, redownload=False):
     """Download a public file from Oloren's Public Storage, and returns the contents.
@@ -166,15 +169,16 @@ def download_public_file(path, redownload=False):
 
     local_path = os.path.join(os.path.expanduser("~"), ".oce", path)
 
-    if os.path.exists(local_path) and not redownload: return local_path
+    if os.path.exists(local_path) and not redownload:
+        return local_path
 
     if not os.path.exists(os.path.dirname(local_path)):
         os.makedirs(os.path.dirname(local_path))
 
     print(f"Downloading {path}...")
     fs = gcsfs.GCSFileSystem()
-    with fs.open(f'gs://oloren-public-data/{path}', 'rb') as f:
-        with open(local_path, 'wb') as out:
+    with fs.open(f"gs://oloren-public-data/{path}", "rb") as f:
+        with open(local_path, "wb") as out:
             out.write(f.read())
 
     return local_path
@@ -183,6 +187,7 @@ def download_public_file(path, redownload=False):
 def get_default_args(func):
     signature = inspect.signature(func)
     return {k: v.default for k, v in signature.parameters.items() if v.default is not inspect.Parameter.empty}
+
 
 def log_arguments(func: Callable[..., None]) -> Callable[..., None]:
     """
@@ -197,77 +202,200 @@ def log_arguments(func: Callable[..., None]) -> Callable[..., None]:
     """
 
     def wrapper(self, *args, **kwargs):
-
-        if "log" in kwargs.keys() and not kwargs["log"]:
-            pass
-        else:
+        if "log" not in kwargs.keys() or kwargs["log"]:
             kwds = get_default_args(func)
             for k, v in kwds.items():
-                if not k in kwargs.keys():
-                    kwargs.update({k: v})
+                if k not in kwargs:
+                    kwargs[k] = v
             self.args = args
-            self.kwargs = {k: v for k, v in kwargs.items() if not k in ignored_kwargs}
-        if runtime.is_local:  # don't actually init if not local
+            self.kwargs = {k: v for k, v in kwargs.items() if k not in ignored_kwargs}
+        if runtime.is_local:
             return func(self, *args, **kwargs)
-        else:
-            import uuid
-            REMOTE_ID = uuid.uuid4()
+        import uuid
+
+        REMOTE_ID = str(uuid.uuid4())
+
+        if "BaseRemoteSymbol" in str(type(self)):
             self.REMOTE_ID = REMOTE_ID
-            if "BaseRemoteSymbol" in str(type(self)):
-                return func(self, *args, **kwargs)
-            else:
-                print(f"CREATE {REMOTE_ID} = {type(self)}(args={args}, kwargs={kwargs})")
-                def test(x, y):
-                    print("Adding is happening!")
-                self.__add__ = test
+            return func(self, *args, **kwargs)
+
+        runtime.add_instruction(
+            {
+                "type": "CREATE",
+                "REMOTE_ID": REMOTE_ID,
+                "parameters": parameterize(self),
+            }
+        )
+        self.REMOTE_ID = REMOTE_ID
 
     wrapper.__wrapped__ = func
 
     return wrapper
 
 
+def deparametrize_args_kwargs(params):
+    args = params["args"]
+    kwargs = params["kwargs"]
+    return [create_BC(arg) for arg in args], {key: create_BC(kwarg) for key, kwarg in kwargs.items()}
+
+
+def recursive_get_attr(parent, attr):
+    if len(attr) == 0:
+        return parent
+    return recursive_get_attr(getattr(parent, attr[0]), attr[1:])
+
+
 class Runtime:
     def __init__(self) -> None:
         self.runtime = "local"
+        self.instruction_buffer = []
+        self.memory = {}
 
     def change_runtime(self, runtime: str):
         self.runtime = runtime
+        if runtime != "local" and self.runtime != "local":
+            self.instruction_buffer = []
+
+    def add_instruction(self, instruction):
+        # print(f"Adding {instruction} to buffer")
+        self.instruction_buffer.append(instruction)
+        if instruction["type"] == "CALL":
+            return self.run_instructions_blocking()
+
+    def get_iterable(self, remote_id):
+        self.instruction_buffer.append({"type": "ITER", "REMOTE_ID": remote_id})
+        return [BaseRemoteSymbol.from_rid(rid) for rid in self.run_instructions_blocking()]
+
+    def get_obj_repr(self, remote_id):
+        self.instruction_buffer.append({"type": "REPR", "REMOTE_ID": remote_id})
+        return self.run_instructions_blocking()
+
+    def run_instructions_blocking(self):
+        runtime = self.runtime
+        self.change_runtime("local")
+        while len(self.instruction_buffer) > 0:
+            instruction = self.instruction_buffer.pop(0)
+            try:
+                # print(f"Running: {instruction}")
+                if instruction["type"] == "CREATE":
+                    self.memory[instruction["REMOTE_ID"]] = create_BC(instruction["parameters"])
+                elif instruction["type"] == "SYMBOL":
+                    self.memory[instruction["REMOTE_ID"]] = getattr(
+                        self.memory[instruction["PARENT_REMOTE_ID"]], instruction["SYMBOL_NAME"]
+                    )
+                elif instruction["type"] == "CALL":
+                    args, kwargs = deparametrize_args_kwargs(instruction["ARGUMENTS"])
+                    self.memory[instruction["REMOTE_ID"]] = self.memory[instruction["PARENT_REMOTE_ID"]](
+                        *args, **kwargs
+                    )
+                    self.change_runtime(runtime)
+
+                elif instruction["type"] == "REPR":
+                    return str(self.memory[instruction["REMOTE_ID"]].__repr__())
+                elif instruction["type"] == "ITER":
+                    children = []
+                    for x in self.memory[instruction["REMOTE_ID"]]:
+                        import uuid
+
+                        children.append(str(uuid.uuid4()))
+                        self.memory[children[-1]] = x
+                    self.change_runtime(runtime)
+                    return children
+                else:
+                    raise ValueError(f"Provided instruction type '{instruction['type']}' is invalid ")
+            except:
+                import traceback
+
+                self.instruction_buffer = [instruction] + self.instruction_buffer
+                raise RuntimeError(f"Instruction {instruction} failed. Traceback:\n{traceback.format_exc()}")
+        self.change_runtime(runtime)
 
     @property
     def is_local(self):
         return self.runtime == "local"
 
+
 runtime = Runtime()
+
+
+def pretty_args_kwargs(args, kwargs):
+    parameterized_args = [parameterize(arg) for arg in args]
+    parameterized_kwargs = {k: parameterize(v) for k, v in kwargs.items()}
+    return f"(args={parameterized_args}, kwargs={parameterized_kwargs})"
+
+
+def parametrize_args_kwargs(args, kwargs):
+    parameterized_args = [parameterize(arg) for arg in args]
+    parameterized_kwargs = {k: parameterize(v) for k, v in kwargs.items()}
+    return {"args": parameterized_args, "kwargs": parameterized_kwargs}
+
 
 class BaseRemoteSymbol(ABC):
     @log_arguments
-    def __init__(self, name, parent) -> None:
+    def __init__(self, REMOTE_SYMBOL_NAME, REMOTE_PARENT, args=None, kwargs=None) -> None:
         if runtime.is_local:
             raise RuntimeError("Cannot instantiate RemoteObject in local runtime")
-        else:
-            self.REMOTE_SYMBOL_NAME = name
-            self.REMOTE_PARENT = parent
-            self.REMOTE_CHILDREN = {}
-            print(f"SYMBOL {self.REMOTE_ID} = {self.REMOTE_PARENT}.{self.REMOTE_SYMBOL_NAME}")
 
+        if args is not None:
+            self.args = args
+        if kwargs is not None:
+            self.kwargs = kwargs
+
+        self.REMOTE_SYMBOL_NAME = REMOTE_SYMBOL_NAME
+        self.REMOTE_PARENT = REMOTE_PARENT
+        self.REMOTE_CHILDREN = {}
+        if REMOTE_SYMBOL_NAME == "CALL":
+            runtime.add_instruction(
+                {
+                    "type": "CALL",
+                    "PARENT_REMOTE_ID": self.REMOTE_PARENT.REMOTE_ID,
+                    "REMOTE_ID": self.REMOTE_ID,
+                    "ARGUMENTS": parametrize_args_kwargs(args, kwargs),
+                }
+            )
+        else:
+            # print(f"SYMBOL {self.REMOTE_ID} = {self.REMOTE_PARENT.REMOTE_ID}.{self.REMOTE_SYMBOL_NAME}")
+            runtime.add_instruction(
+                {
+                    "type": "SYMBOL",
+                    "PARENT_REMOTE_ID": self.REMOTE_PARENT.REMOTE_ID,
+                    "SYMBOL_NAME": self.REMOTE_SYMBOL_NAME,
+                    "REMOTE_ID": self.REMOTE_ID,
+                }
+            )
+
+    @classmethod
+    def from_rid(cls, rid):
+        x = object.__new__(cls)
+        x.REMOTE_ID = rid
+        return x
+
+    def __iter__(self):
+        return iter(runtime.get_iterable(self.REMOTE_ID))
+
+    def __repr__(self):
+        return runtime.get_obj_repr(self.REMOTE_ID)
 
     def __getattribute__(self, key):
-        print(key)
         if runtime.is_local:
-            raise RuntimeError("Cannot call RemoteObject on local runtime")
-        else: # remote runtime
-            if key.startswith("REMOTE") or key.startswith("__"):
-                return object.__getattribute__(self, key)
-            if hasattr(self, "REMOTE_CHILDREN") and key in self.REMOTE_CHILDREN:
-                return self.REMOTE_CHILDREN[key]
-            else:
-                try:
-                    object.__getattribute__(self, key)  # ensure the attribute exists (otherwise throw error)
-                except AttributeError:
-                    print(f"Warning - {key} may not be a valid attribute of {self.__class__.__name__} - continuing anyway")
-                if not hasattr(self, "REMOTE_CHILDREN"): self.REMOTE_CHILDREN = {}
-                self.REMOTE_CHILDREN[key] =  BaseRemoteSymbol(key, self)
-                return self.REMOTE_CHILDREN[key]
+            return object.__getattribute__(self, key)
+        if "ipython_canary_method_should_not_exist" in key:
+            return {}
+        if key.startswith("REMOTE") or key.startswith("__") or key in ["args", "kwargs"]:
+            return object.__getattribute__(self, key)
+        if not hasattr(self, "REMOTE_CHILDREN") or key not in self.REMOTE_CHILDREN:
+            try:
+                object.__getattribute__(self, key)  # ensure the attribute exists (otherwise throw error)
+            except AttributeError:
+                print(f"Warning - {key} may not be a valid attribute of {self.__class__.__name__} - continuing anyway")
+            if not hasattr(self, "REMOTE_CHILDREN"):
+                self.REMOTE_CHILDREN = {}
+            self.REMOTE_CHILDREN[key] = BaseRemoteSymbol(key, self)
+        return self.REMOTE_CHILDREN[key]
+
+    def __call__(self, *args, **kwargs):
+        return BaseRemoteSymbol("CALL", self, args=args, kwargs=kwargs)
+
 
 class BaseClass(BaseRemoteSymbol):
     """BaseClass is the base class for all models.
@@ -325,12 +453,6 @@ class BaseClass(BaseRemoteSymbol):
         obj_copy._load(self._save())
         return obj_copy
 
-    def __getattribute__(self, key):
-        if runtime.is_local:
-            return object.__getattribute__(self, key)
-        else: # remote runtime
-            super().__getattribute__(key)
-
 
 def parameterize(object: Union[BaseClass, list, int, float, str, None]) -> dict:
     """parameterize is a recursive method which creates a dictionary of all arguments necessary to instantiate a BaseClass object.
@@ -346,7 +468,11 @@ def parameterize(object: Union[BaseClass, list, int, float, str, None]) -> dict:
     Returns:
         dict: dictionary of parameters necessary to instantiate the object.
     """
-    if issubclass(type(object), BaseClass):
+    if issubclass(type(object), BaseClass) or (
+        issubclass(type(object), BaseRemoteSymbol) and hasattr(object, "REMOTE_ID")
+    ):
+        if hasattr(object, "REMOTE_ID"):
+            return {"REMOTE_ID": object.REMOTE_ID}
         return {
             **{"BC_class_name": type(object).__name__},
             **{"args": [parameterize(arg) for arg in object.args]},
@@ -362,8 +488,7 @@ def parameterize(object: Union[BaseClass, list, int, float, str, None]) -> dict:
     elif issubclass(type(object), list):
         return [parameterize(x) for x in object]
     else:
-        print(object)
-        raise ValueError
+        raise ValueError(f"Invalid object {object}")
 
 
 def model_name_from_params(param_dict: dict) -> str:
@@ -440,20 +565,30 @@ def create_BC(d: dict) -> BaseClass:
     if isinstance(d, str):
         d = d.replace("'", '"').replace("True", "true").replace("False", "false").replace("None", "null")
         d = json.loads(d)
+
+    if "REMOTE_ID" in d.keys():
+        assert d["REMOTE_ID"] in runtime.memory.keys(), "Invalid Remote ID, cannot load."
+        return runtime.memory[d["REMOTE_ID"]]
+
     args = []
     if "args" in d.keys():
         for arg in d["args"]:
-            if isinstance(arg, dict) and "BC_class_name" in arg.keys():
+            if isinstance(arg, dict) and ("BC_class_name" in arg.keys() or "REMOTE_ID" in arg.keys()):
                 args.append(create_BC(arg))
             else:
                 if isinstance(arg, list):
-                    arg = [create_BC(x) if isinstance(x, dict) and "BC_class_name" in x.keys() else x for x in arg]
+                    arg = [
+                        create_BC(x)
+                        if isinstance(x, dict) and ("BC_class_name" in x.keys() or "REMOTE_ID" in x.keys())
+                        else x
+                        for x in arg
+                    ]
                 args.append(arg)
 
     kwargs = {}
     if "kwargs" in d.keys():
         for k, v in d["kwargs"].items():
-            if isinstance(v, dict) and "BC_class_name" in v.keys():
+            if isinstance(v, dict) and ("BC_class_name" in v.keys() or "REMOTE_ID" in arg.keys()):
                 kwargs[k] = create_BC(v)
             else:
                 kwargs[k] = v
@@ -471,7 +606,7 @@ def loads(d: dict) -> BaseClass:
         BaseClass: the recreated object
     """
 
-    import olorenchemengine as olorenautoml # for backwards compatibility
+    import olorenchemengine as olorenautoml  # for backwards compatibility
 
     args = []
     for arg in d["args"]:
@@ -515,7 +650,7 @@ def load(fname: str) -> BaseClass:
 
 
 def pretty_params(base: Union[BaseClass, dict]) -> dict:
-    """ Returns a dictionary of the parameters of the passed BaseClass object, formatted such that they are in a
+    """Returns a dictionary of the parameters of the passed BaseClass object, formatted such that they are in a
     human readable format, with the names of the arguments included."""
     if isinstance(base, dict):
         base = loads(base)
@@ -547,13 +682,13 @@ def pretty_params(base: Union[BaseClass, dict]) -> dict:
 
 
 def pretty_params_str(base: Union[BaseClass, dict]) -> str:
-    """ Returns a string of the parameters of the passed BaseClass object, formatted such that they are in a human
+    """Returns a string of the parameters of the passed BaseClass object, formatted such that they are in a human
     readable format"""
     return json.dumps(pretty_params(base), indent=4)
 
 
 def json_params_str(base: Union[BaseClass, dict]) -> str:
-    """ Returns a json string of the parameters of the passed BaseClass object so that the model parameter dictionary can
+    """Returns a json string of the parameters of the passed BaseClass object so that the model parameter dictionary can
     be reconstructed with json.load(params_str)"""
     return (
         json.dumps(pretty_params(base))
@@ -563,6 +698,7 @@ def json_params_str(base: Union[BaseClass, dict]) -> str:
         .replace("None", "null")
     )
 
+
 def install_with_permission(package_name: str):
     inp = input(f"The required package {package_name} is not installed. Do you want to install it? [y/N]? ")
     if inp.lower() == "y":
@@ -570,6 +706,7 @@ def install_with_permission(package_name: str):
     else:
         print(f"Stopping program. You can install the package manually with: \n >> pip install {package_name}")
         os._exit(1)
+
 
 def import_or_install(package_name: str, statement: str = None, scope: dict = None):
     if scope is None:

@@ -92,6 +92,7 @@ def remove_config_param(param):
 update_config()
 
 def ExampleDataFrame():
+    return pd.read_csv("/Users/raunakc/Desktop/Demo CSV Files/class_sample.csv")
     return pd.read_csv("gs://oloren-public-data/sample-csvs/sample_data3.csv")
 
 from .base_class import *
