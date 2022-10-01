@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import hashlib
 import inspect
 import json
@@ -300,9 +301,18 @@ class Runtime:
         response = response.json()
         if "traceback" in response:
             print(response["traceback"])
-        import sys
+            import sys
 
-        sys.exit(0)
+            sys.exit(0)
+
+        print(json.dumps(self.instruction_buffer, indent=4))
+        print(response)
+
+        if "data" in response:
+            self.instruction_buffer = []
+            return response["data"]
+
+        self.instruction_buffer = []
 
     def _run_instructions_blocking(self):
         runtime = self.runtime
@@ -318,11 +328,16 @@ class Runtime:
                     )
                 elif instruction["type"] == "CALL":
                     args, kwargs = deparametrize_args_kwargs(instruction["ARGUMENTS"])
-                    self.memory[instruction["REMOTE_ID"]] = self.memory[instruction["PARENT_REMOTE_ID"]](
-                        *args, **kwargs
-                    )
-                    self.change_runtime(runtime)
+                    method = self.memory[instruction["PARENT_REMOTE_ID"]]
 
+                    with contextlib.suppress(AttributeError):
+                        if method.__name__ == "render_ipynb":  # handle notebook functions
+                            method = method.__self__.render_data_url
+
+                    obj = method(*args, **kwargs)
+
+                    self.memory[instruction["REMOTE_ID"]] = obj
+                    self.change_runtime(runtime)
                 elif instruction["type"] == "REPR":
                     return str(self.memory[instruction["REMOTE_ID"]].__repr__())
                 elif instruction["type"] == "ITER":
@@ -387,7 +402,6 @@ class BaseRemoteSymbol(ABC):
                 }
             )
         else:
-            # print(f"SYMBOL {self.REMOTE_ID} = {self.REMOTE_PARENT.REMOTE_ID}.{self.REMOTE_SYMBOL_NAME}")
             runtime.add_instruction(
                 {
                     "type": "SYMBOL",
