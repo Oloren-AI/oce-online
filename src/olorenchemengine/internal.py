@@ -334,7 +334,10 @@ class Runtime:
                     obj = method(*args, **kwargs)
                     if obj is None:
                         return
-                    self.memory[instruction["REMOTE_ID"]] = obj
+                    try:
+                        return json.dumps(x)
+                    except (TypeError, OverflowError):
+                        self.memory[instruction["REMOTE_ID"]] = obj
                 elif instruction["type"] == "REPR":
                     return str(self.memory[instruction["REMOTE_ID"]].__repr__())
                 elif instruction["type"] == "ITER":
@@ -359,6 +362,8 @@ class Runtime:
 
 
 runtime = Runtime()
+
+def is_jsonable(x):
 
 
 def pretty_args_kwargs(args, kwargs):
