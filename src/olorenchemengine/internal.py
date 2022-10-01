@@ -363,8 +363,6 @@ class Runtime:
 
 runtime = Runtime()
 
-def is_jsonable(x):
-
 
 def pretty_args_kwargs(args, kwargs):
     parameterized_args = [parameterize(arg) for arg in args]
