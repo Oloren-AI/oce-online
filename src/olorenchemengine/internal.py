@@ -101,15 +101,17 @@ class OASConnector:
             "appId": "1:602366687071:web:f35531f7142084b86a28ea",
             "measurementId": "G-MVNK4DPQ60",
         }
-        firebase = pyrebase.initialize_app(config)
+        self.firebase = pyrebase.initialize_app(config)
 
-        auth = firebase.auth()
-        user = auth.refresh(response["refreshToken"])
+        # self.auth = self.firebase.auth()
+        # response = self.auth.refresh(response["refreshToken"])
 
-        self.storage = firebase.storage()
+        self.storage = self.firebase.storage()
         self.logging_db = Client("oloren-ai", creds)
         self.uid = response["uid"]
         self.uid_token = response["idToken"]
+
+        return self.uid_token
 
     def upload_vis(self, visualization):
         self.authenticate()
@@ -245,14 +247,23 @@ def recursive_get_attr(parent, attr):
     return recursive_get_attr(getattr(parent, attr[0]), attr[1:])
 
 
+def generate_uuid():
+    import uuid
+
+    return str(uuid.uuid4())
+
+
 class Runtime:
     def __init__(self) -> None:
         self.runtime = "local"
         self.instruction_buffer = []
         self.memory = {}
+        self.session_id = None
 
     def change_runtime(self, runtime: str):
         self.runtime = runtime
+        if self.session_id is None:
+            self.session_id = generate_uuid()
         if runtime != "local" and self.runtime != "local":
             self.instruction_buffer = []
 
@@ -260,23 +271,45 @@ class Runtime:
         # print(f"Adding {instruction} to buffer")
         self.instruction_buffer.append(instruction)
         if instruction["type"] == "CALL":
-            return self.run_instructions_blocking()
+            return self.send_instructions_blocking()
 
     def get_iterable(self, remote_id):
         self.instruction_buffer.append({"type": "ITER", "REMOTE_ID": remote_id})
-        return [BaseRemoteSymbol.from_rid(rid) for rid in self.run_instructions_blocking()]
+        return [BaseRemoteSymbol.from_rid(rid) for rid in self.send_instructions_blocking()]
 
     def get_obj_repr(self, remote_id):
         self.instruction_buffer.append({"type": "REPR", "REMOTE_ID": remote_id})
-        return self.run_instructions_blocking()
+        return self.send_instructions_blocking()
 
-    def run_instructions_blocking(self):
+    def send_instructions_blocking(self):
+
+        import requests
+
+        response = requests.post(
+            f"http://api.oloren.ai:5000/firestore/run_remote/",
+            params={
+                "instructions": json.dumps(self.instruction_buffer),
+                "uid": oas_connector.authenticate(),
+                "sid": self.session_id,
+            },
+            headers={
+                "accept": "application/json",
+                "content-type": "application/x-www-form-urlencoded",
+            },
+        )
+        response = response.json()
+        if "traceback" in response:
+            print(response["traceback"])
+        import sys
+
+        sys.exit(0)
+
+    def _run_instructions_blocking(self):
         runtime = self.runtime
         self.change_runtime("local")
         while len(self.instruction_buffer) > 0:
             instruction = self.instruction_buffer.pop(0)
             try:
-                # print(f"Running: {instruction}")
                 if instruction["type"] == "CREATE":
                     self.memory[instruction["REMOTE_ID"]] = create_BC(instruction["parameters"])
                 elif instruction["type"] == "SYMBOL":
