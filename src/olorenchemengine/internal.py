@@ -315,8 +315,6 @@ class Runtime:
         self.instruction_buffer = []
 
     def _run_instructions_blocking(self):
-        runtime = self.runtime
-        self.change_runtime("local")
         while len(self.instruction_buffer) > 0:
             instruction = self.instruction_buffer.pop(0)
             try:
@@ -331,13 +329,12 @@ class Runtime:
                     method = self.memory[instruction["PARENT_REMOTE_ID"]]
 
                     with contextlib.suppress(AttributeError):
-                        if method.__name__ == "render_ipynb":  # handle notebook functions
+                        if method.__name__ == "render_ipynb":  # monkey patch notebook rendering
                             method = method.__self__.render_data_url
-
                     obj = method(*args, **kwargs)
-
+                    if obj is None:
+                        return
                     self.memory[instruction["REMOTE_ID"]] = obj
-                    self.change_runtime(runtime)
                 elif instruction["type"] == "REPR":
                     return str(self.memory[instruction["REMOTE_ID"]].__repr__())
                 elif instruction["type"] == "ITER":
@@ -347,7 +344,6 @@ class Runtime:
 
                         children.append(str(uuid.uuid4()))
                         self.memory[children[-1]] = x
-                    self.change_runtime(runtime)
                     return children
                 else:
                     raise ValueError(f"Provided instruction type '{instruction['type']}' is invalid ")
@@ -356,7 +352,6 @@ class Runtime:
 
                 self.instruction_buffer = [instruction] + self.instruction_buffer
                 raise RuntimeError(f"Instruction {instruction} failed. Traceback:\n{traceback.format_exc()}")
-        self.change_runtime(runtime)
 
     @property
     def is_local(self):
