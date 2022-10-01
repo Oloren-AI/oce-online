@@ -72,6 +72,7 @@ fi
 
 
 if [[ $* == *--docker* ]]; then
+        python3.8 -m pip install olorenchemengine
     echo "Docker argument passed, skipping installing chemengine package."
 else
     if [[ $* == *--dev* ]]; then
