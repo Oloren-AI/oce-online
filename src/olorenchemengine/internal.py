@@ -287,7 +287,7 @@ class Runtime:
         import requests
 
         response = requests.post(
-            f"http://api.oloren.ai:5000/firestore/run_remote/",
+            "http://api.oloren.ai:5000/firestore/run_remote/",
             params={
                 "instructions": json.dumps(self.instruction_buffer),
                 "uid": oas_connector.authenticate(),
@@ -300,6 +300,7 @@ class Runtime:
         )
         response = response.json()
         if "traceback" in response:
+            print("Remote Call Resulted in Traceback:")
             print(response["traceback"])
             import sys
 
@@ -313,48 +314,6 @@ class Runtime:
             return response["data"]
 
         self.instruction_buffer = []
-
-    def _run_instructions_blocking(self):
-        while len(self.instruction_buffer) > 0:
-            instruction = self.instruction_buffer.pop(0)
-            try:
-                if instruction["type"] == "CREATE":
-                    self.memory[instruction["REMOTE_ID"]] = create_BC(instruction["parameters"])
-                elif instruction["type"] == "SYMBOL":
-                    self.memory[instruction["REMOTE_ID"]] = getattr(
-                        self.memory[instruction["PARENT_REMOTE_ID"]], instruction["SYMBOL_NAME"]
-                    )
-                elif instruction["type"] == "CALL":
-                    args, kwargs = deparametrize_args_kwargs(instruction["ARGUMENTS"])
-                    method = self.memory[instruction["PARENT_REMOTE_ID"]]
-
-                    with contextlib.suppress(AttributeError):
-                        if method.__name__ == "render_ipynb":  # monkey patch notebook rendering
-                            method = method.__self__.render_data_url
-                    obj = method(*args, **kwargs)
-                    if obj is None:
-                        return
-                    try:
-                        return json.dumps(x)
-                    except (TypeError, OverflowError):
-                        self.memory[instruction["REMOTE_ID"]] = obj
-                elif instruction["type"] == "REPR":
-                    return str(self.memory[instruction["REMOTE_ID"]].__repr__())
-                elif instruction["type"] == "ITER":
-                    children = []
-                    for x in self.memory[instruction["REMOTE_ID"]]:
-                        import uuid
-
-                        children.append(str(uuid.uuid4()))
-                        self.memory[children[-1]] = x
-                    return children
-                else:
-                    raise ValueError(f"Provided instruction type '{instruction['type']}' is invalid ")
-            except:
-                import traceback
-
-                self.instruction_buffer = [instruction] + self.instruction_buffer
-                raise RuntimeError(f"Instruction {instruction} failed. Traceback:\n{traceback.format_exc()}")
 
     @property
     def is_local(self):
@@ -390,8 +349,10 @@ class BaseRemoteSymbol(ABC):
         self.REMOTE_SYMBOL_NAME = REMOTE_SYMBOL_NAME
         self.REMOTE_PARENT = REMOTE_PARENT
         self.REMOTE_CHILDREN = {}
+        self.REMOTE_IPYNB = None
+
         if REMOTE_SYMBOL_NAME == "CALL":
-            runtime.add_instruction(
+            out = runtime.add_instruction(
                 {
                     "type": "CALL",
                     "PARENT_REMOTE_ID": self.REMOTE_PARENT.REMOTE_ID,
@@ -399,6 +360,12 @@ class BaseRemoteSymbol(ABC):
                     "ARGUMENTS": parametrize_args_kwargs(args, kwargs),
                 }
             )
+
+            if self.REMOTE_PARENT.REMOTE_SYMBOL_NAME == "render_ipynb":
+                from IPython.display import IFrame
+
+                self.REMOTE_IPYNB = IFrame(out, width=800, height=600)
+
         else:
             runtime.add_instruction(
                 {
@@ -414,6 +381,9 @@ class BaseRemoteSymbol(ABC):
         x = object.__new__(cls)
         x.REMOTE_ID = rid
         return x
+
+    def _ipython_display_(self):
+        return self.REMOTE_IPYNB
 
     def __iter__(self):
         return iter(runtime.get_iterable(self.REMOTE_ID))
