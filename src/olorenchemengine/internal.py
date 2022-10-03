@@ -137,15 +137,15 @@ class OASConnector:
         with tempfile.NamedTemporaryFile() as tmp:
             pickle.dump(saves(model), tmp)
             tmp.flush()
-            self.storage.child(self.uid + "/models/" + model_name + ".pkl").put(tmp.name, self.uid_token)
+            self.storage.child(f"{self.uid}/models/{model_name}.pkl").put(tmp.name, self.uid_token)
 
-        out = self.logging_db.collection("models").add(
+        return self.logging_db.collection("models").add(
             {
                 "uid": self.uid,
                 "did": None,
                 "source": "oce",
                 "data": {
-                    "file_path": "gs://oloren-ai.appspot.com/" + self.uid + "/models/" + model_name + ".pkl",
+                    "file_path": f"gs://oloren-ai.appspot.com/{self.uid}/models/{model_name}.pkl",
                     "name": model_name,
                     "description": pretty_params_str(model),
                     "parameters": json.dumps(parameterize(model)),
@@ -154,8 +154,6 @@ class OASConnector:
                 },
             }
         )
-
-        return out
 
 
 oas_connector = OASConnector()
@@ -212,7 +210,7 @@ def log_arguments(func: Callable[..., None]) -> Callable[..., None]:
                     kwargs[k] = v
             self.args = args
             self.kwargs = {k: v for k, v in kwargs.items() if k not in ignored_kwargs}
-        if runtime.is_local:
+        if _runtime.is_local:
             return func(self, *args, **kwargs)
         import uuid
 
@@ -222,7 +220,7 @@ def log_arguments(func: Callable[..., None]) -> Callable[..., None]:
             self.REMOTE_ID = REMOTE_ID
             return func(self, *args, **kwargs)
 
-        runtime.add_instruction(
+        _runtime.add_instruction(
             {
                 "type": "CREATE",
                 "REMOTE_ID": REMOTE_ID,
@@ -254,25 +252,25 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 
-class Runtime:
+class _RemoteRuntime:
     def __init__(self) -> None:
         self.runtime = "local"
         self.instruction_buffer = []
-        self.memory = {}
         self.session_id = None
+        self.runner = None
 
-    def change_runtime(self, runtime: str):
-        self.runtime = runtime
-        if self.session_id is None:
-            self.session_id = generate_uuid()
-        if runtime != "local" and self.runtime != "local":
-            self.instruction_buffer = []
+    def get_remote_object(self, remote_id):
+        if self.runner is None:
+            raise NotImplementedError("Not yet implemented remote object retrieval locally")
+        else:
+            return self.runner.get_remote_object(remote_id)
 
     def add_instruction(self, instruction):
-        # print(f"Adding {instruction} to buffer")
         self.instruction_buffer.append(instruction)
         if instruction["type"] == "CALL":
-            return self.send_instructions_blocking()
+            x = self.send_instructions_blocking()
+            if x is not None and isinstance(x, str):
+                return json.loads(x)
 
     def get_iterable(self, remote_id):
         self.instruction_buffer.append({"type": "ITER", "REMOTE_ID": remote_id})
@@ -298,29 +296,52 @@ class Runtime:
                 "content-type": "application/x-www-form-urlencoded",
             },
         )
+
         response = response.json()
         if "traceback" in response:
-            print("Remote Call Resulted in Traceback:")
+            print(f"Remote Call: {self.instruction_buffer}\nResulted in Traceback:")
             print(response["traceback"])
             import sys
 
             sys.exit(0)
 
-        print(json.dumps(self.instruction_buffer, indent=4))
-        print(response)
-
-        if "data" in response:
-            self.instruction_buffer = []
-            return response["data"]
+        # print(json.dumps(self.instruction_buffer, indent=4))
+        # print(response)
 
         self.instruction_buffer = []
+        if "data" in response:
+            if len(response["data"]["stdout"]) > 0:
+                print(response["data"]["stdout"])
+            return response["data"]["return"]
 
     @property
     def is_local(self):
         return self.runtime == "local"
 
 
-runtime = Runtime()
+_runtime = _RemoteRuntime()  # internal runtime object
+
+
+class Remote(object):
+    def __init__(self, session_id=None, keep_alive=False):
+        self.keep_alive = keep_alive
+        self.session_id = session_id
+
+    def __enter__(self):
+        _runtime.runtime = "remote"
+        if self.session_id is None:
+            self.session_id = generate_uuid()
+        _runtime.session_id = self.session_id
+        return _runtime.session_id
+
+    def __exit__(self, type, value, traceback):
+        if not self.keep_alive:
+            pass
+            # bucket = oas_connector.storage.bucket
+            # oas_connector.logging_db.collection("sessions").document(self.session_id).
+            # oas_connector.logging_db.collection("sessions").document(self.session_id).delete()
+            # for blob in blobs:
+            #     blob.delete()
 
 
 def pretty_args_kwargs(args, kwargs):
@@ -338,8 +359,8 @@ def parametrize_args_kwargs(args, kwargs):
 class BaseRemoteSymbol(ABC):
     @log_arguments
     def __init__(self, REMOTE_SYMBOL_NAME, REMOTE_PARENT, args=None, kwargs=None) -> None:
-        if runtime.is_local:
-            raise RuntimeError("Cannot instantiate RemoteObject in local runtime")
+        if _runtime.is_local:
+            raise RuntimeError("Cannot instantiate RemoteObject in local _runtime")
 
         if args is not None:
             self.args = args
@@ -349,10 +370,9 @@ class BaseRemoteSymbol(ABC):
         self.REMOTE_SYMBOL_NAME = REMOTE_SYMBOL_NAME
         self.REMOTE_PARENT = REMOTE_PARENT
         self.REMOTE_CHILDREN = {}
-        self.REMOTE_IPYNB = None
 
         if REMOTE_SYMBOL_NAME == "CALL":
-            out = runtime.add_instruction(
+            out = _runtime.add_instruction(
                 {
                     "type": "CALL",
                     "PARENT_REMOTE_ID": self.REMOTE_PARENT.REMOTE_ID,
@@ -362,12 +382,12 @@ class BaseRemoteSymbol(ABC):
             )
 
             if self.REMOTE_PARENT.REMOTE_SYMBOL_NAME == "render_ipynb":
-                from IPython.display import IFrame
+                from IPython.display import IFrame, display
 
-                self.REMOTE_IPYNB = IFrame(out, width=800, height=600)
+                display(IFrame(out, width=800, height=600))
 
         else:
-            runtime.add_instruction(
+            _runtime.add_instruction(
                 {
                     "type": "SYMBOL",
                     "PARENT_REMOTE_ID": self.REMOTE_PARENT.REMOTE_ID,
@@ -382,17 +402,14 @@ class BaseRemoteSymbol(ABC):
         x.REMOTE_ID = rid
         return x
 
-    def _ipython_display_(self):
-        return self.REMOTE_IPYNB
-
     def __iter__(self):
-        return iter(runtime.get_iterable(self.REMOTE_ID))
+        return iter(_runtime.get_iterable(self.REMOTE_ID))
 
     def __repr__(self):
-        return runtime.get_obj_repr(self.REMOTE_ID)
+        return _runtime.get_obj_repr(self.REMOTE_ID)
 
     def __getattribute__(self, key):
-        if runtime.is_local:
+        if _runtime.is_local:
             return object.__getattribute__(self, key)
         if "ipython_canary_method_should_not_exist" in key:
             return {}
@@ -441,12 +458,11 @@ class BaseClass(BaseRemoteSymbol):
 
         Standard instances means that all required parameters for instantiation of the
         subclasses are set with canonical values."""
-        if not hasattr(cls, "__abstractmethods__") or len(cls.__abstractmethods__) == 0:
-            try:
-                return [cls()] + [o for sc in cls.__subclasses__() for o in sc.AllInstances()]
-            except:
-                return [o for sc in cls.__subclasses__() for o in sc.AllInstances()]
-        else:
+        if hasattr(cls, "__abstractmethods__") and len(cls.__abstractmethods__) != 0:
+            return [o for sc in cls.__subclasses__() for o in sc.AllInstances()]
+        try:
+            return [cls()] + [o for sc in cls.__subclasses__() for o in sc.AllInstances()]
+        except Exception:
             return [o for sc in cls.__subclasses__() for o in sc.AllInstances()]
 
     @abstractmethod
@@ -582,8 +598,7 @@ def create_BC(d: dict) -> BaseClass:
         d = json.loads(d)
 
     if "REMOTE_ID" in d.keys():
-        assert d["REMOTE_ID"] in runtime.memory.keys(), "Invalid Remote ID, cannot load."
-        return runtime.memory[d["REMOTE_ID"]]
+        return _runtime.get_remote_obj(d["REMOTE_ID"])
 
     args = []
     if "args" in d.keys():
@@ -671,16 +686,15 @@ def pretty_params(base: Union[BaseClass, dict]) -> dict:
         base = loads(base)
 
     if issubclass(type(base), BaseClass):
-        args = [arg for arg in base.args]
-        kwargs = {k: v for k, v in base.kwargs.items()}
+        args = list(base.args)
+        kwargs = dict(base.kwargs.items())
         base_object_parameters = list(inspect.signature(base.__init__).parameters.keys())
 
         for kwarg in kwargs:
             if kwarg in base_object_parameters:
                 base_object_parameters.remove(kwarg)
 
-        labeled_args = {k: v for k, v in zip(base_object_parameters, args)}
-
+        labeled_args = dict(zip(base_object_parameters, args))
         fully_labeled_args = {k: pretty_params(v) for k, v in labeled_args.items()}
         fully_labeled_kwargs = {k: pretty_params(v) for k, v in kwargs.items()}
 
