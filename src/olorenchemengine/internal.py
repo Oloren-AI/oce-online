@@ -259,7 +259,7 @@ class _RemoteRuntime:
         self.session_id = None
         self.runner = None
 
-    def get_remote_object(self, remote_id):
+    def get_remote_obj(self, remote_id):
         if self.runner is None:
             raise NotImplementedError("Not yet implemented remote object retrieval locally")
         else:
