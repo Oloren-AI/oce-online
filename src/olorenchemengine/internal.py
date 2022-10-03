@@ -322,6 +322,10 @@ class _RemoteRuntime:
 _runtime = _RemoteRuntime()  # internal runtime object
 
 
+def set_runner(runner):
+    _runtime.runner = runner
+
+
 class Remote(object):
     def __init__(self, session_id=None, keep_alive=False):
         self.keep_alive = keep_alive
