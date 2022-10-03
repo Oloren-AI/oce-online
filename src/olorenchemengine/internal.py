@@ -263,7 +263,7 @@ class _RemoteRuntime:
         if self.runner is None:
             raise NotImplementedError("Not yet implemented remote object retrieval locally")
         else:
-            return self.runner.get_remote_object(remote_id)
+            return self.runner.get_remote_obj(remote_id)
 
     def add_instruction(self, instruction):
         self.instruction_buffer.append(instruction)
