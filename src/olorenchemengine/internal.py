@@ -1,4 +1,5 @@
 import base64
+import tempfile
 import contextlib
 import hashlib
 import inspect
@@ -137,7 +138,7 @@ class OASConnector:
         with tempfile.NamedTemporaryFile() as tmp:
             pickle.dump(saves(model), tmp)
             tmp.flush()
-            self.storage.child(f"{self.uid}/models/{model_name}.pkl").put(tmp.name, self.uid_token)
+            response = self.storage.child(f"{self.uid}/models/{model_name}.pkl").put(tmp.name, self.uid_token)
 
         return self.logging_db.collection("models").add(
             {
@@ -340,12 +341,18 @@ class Remote(object):
 
     def __exit__(self, type, value, traceback):
         if not self.keep_alive:
-            pass
-            # bucket = oas_connector.storage.bucket
-            # oas_connector.logging_db.collection("sessions").document(self.session_id).
-            # oas_connector.logging_db.collection("sessions").document(self.session_id).delete()
-            # for blob in blobs:
-            #     blob.delete()
+            import google
+
+            oas_connector.authenticate()
+
+            with contextlib.suppress(google.api_core.exceptions.PermissionDenied):
+                doc = oas_connector.logging_db.collection("sessions").document(self.session_id).get().to_dict()
+                if doc is not None:
+                    for rid in doc["objects"]:
+                        oas_connector.storage.delete(
+                            f"{oas_connector.uid}/sessions/{self.session_id}/{rid}.oce", oas_connector.uid_token
+                        )
+                    oas_connector.logging_db.collection("sessions").document(self.session_id).delete()
 
 
 def pretty_args_kwargs(args, kwargs):
@@ -391,6 +398,9 @@ class BaseRemoteSymbol(ABC):
                 display(IFrame(out, width=800, height=600))
 
         else:
+            if not hasattr(self.REMOTE_PARENT, "REMOTE_ID"):
+                self.REMOTE_PARENT._upload_remote()
+
             _runtime.add_instruction(
                 {
                     "type": "SYMBOL",
@@ -412,13 +422,40 @@ class BaseRemoteSymbol(ABC):
     def __repr__(self):
         return _runtime.get_obj_repr(self.REMOTE_ID)
 
+    def _upload_remote(self):
+        try:
+            oas_connector.authenticate()
+            REMOTE_ID = generate_uuid()
+
+            print(f"Uploading {self.__class__.__name__}")
+
+            r = _runtime.runtime
+            _runtime.runtime = "local"
+            with tempfile.NamedTemporaryFile() as tmp:
+                pickle.dump(saves(self), tmp)
+                tmp.flush()
+                response = oas_connector.storage.child(
+                    f"{oas_connector.uid}/sessions/{_runtime.session_id}" + f"/{REMOTE_ID}.oce"
+                ).put(tmp.name, oas_connector.uid_token)
+        except:
+            import traceback, sys
+
+            traceback.print_exc()
+            sys.exit(0)
+
+        _runtime.runtime = r
+        object.__setattr__(self, "REMOTE_ID", REMOTE_ID)
+
+        return REMOTE_ID
+
     def __getattribute__(self, key):
-        if _runtime.is_local:
+        if _runtime.is_local or key == "_upload_remote":
             return object.__getattribute__(self, key)
         if "ipython_canary_method_should_not_exist" in key:
             return {}
         if key.startswith("REMOTE") or key.startswith("__") or key in ["args", "kwargs"]:
             return object.__getattribute__(self, key)
+
         if not hasattr(self, "REMOTE_CHILDREN") or key not in self.REMOTE_CHILDREN:
             try:
                 object.__getattribute__(self, key)  # ensure the attribute exists (otherwise throw error)

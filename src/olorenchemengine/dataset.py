@@ -9,8 +9,9 @@ import olorenchemengine as oce
 
 from .base_class import *
 
+
 class BaseDataset(BaseClass):
-    """ BaseDataset for all dataset objects
+    """BaseDataset for all dataset objects
 
     BaseDataset holds its data in a Pandas DataFrame.
 
@@ -25,14 +26,14 @@ class BaseDataset(BaseClass):
     @log_arguments
     def __init__(
         self,
-        name: str =None,
-        data: str =None,
+        name: str = None,
+        data: str = None,
         structure_col: str = None,
-        property_col: str =None,
-        feature_cols: list =[],
+        property_col: str = None,
+        feature_cols: list = [],
         date_col: str = None,
         log=True,
-        **kwargs
+        **kwargs,
     ):
 
         if name is None:
@@ -59,17 +60,17 @@ class BaseDataset(BaseClass):
 
     @property
     def entire_dataset(self):
-        """ Returns the entire dataset
+        """Returns the entire dataset
 
         Returns:
             pd.DataFrame: The entire dataset
-            """
+        """
 
         return self.data[self.input_cols], self.data[self.property_col]
 
     @property
     def entire_dataset_split(self):
-        """ Returns a tuple of three elements where the first is the input train data,
+        """Returns a tuple of three elements where the first is the input train data,
         the second is the input validation data, and the third is the input test data
 
         Returns:
@@ -80,15 +81,16 @@ class BaseDataset(BaseClass):
 
     @property
     def train_dataset(self):
-        """ Returns the train dataset
-        """
-        assert "split" in self.data.columns, "Dataset not split yet, please use a splitter or define the split column"
+        """Returns the train dataset"""
+        assert (
+            "split" in self.data.columns
+        ), f"Dataset not split yet, please use a splitter or define the split column {self.data.columns}"
         train = self.data[self.data["split"] == "train"]
         return train[self.input_cols], train[self.property_col]
 
     @property
     def valid_dataset(self):
-        """ Gives a tuple of two elements where the first is the input val data and
+        """Gives a tuple of two elements where the first is the input val data and
         the second is the property of interest
 
         Returns:
@@ -101,8 +103,7 @@ class BaseDataset(BaseClass):
 
     @property
     def trainval_dataset(self):
-        """ Returns the train and validation dataset
-        """
+        """Returns the train and validation dataset"""
         assert "split" in self.data.columns, "Dataset not split yet, please use a splitter or define the split column"
         train = self.data[self.data["split"] == "train"]
         val = self.data[self.data["split"] == "valid"]
@@ -111,7 +112,7 @@ class BaseDataset(BaseClass):
 
     @property
     def test_dataset(self):
-        """ Gives a tuple of two elements where the first is the input test data and
+        """Gives a tuple of two elements where the first is the input test data and
         the second is the property of interest
 
         Returns:
@@ -127,7 +128,7 @@ class BaseDataset(BaseClass):
         return (len(self.train_dataset[0]), len(self.valid_dataset[0]), len(self.test_dataset[0]))
 
     def transform(self, dataset: Self):
-        """ Combines this dataset with the passed dataset object"""
+        """Combines this dataset with the passed dataset object"""
         # Rename passed dataset to homogenize with this dataset
 
     def _save(self):
@@ -139,8 +140,9 @@ class BaseDataset(BaseClass):
 
         self.data = pd.read_csv(StringIO(d["data_save"]))
 
+
 class BaseDatasetTransform(BaseClass):
-    """ Applies a transformation onto the inputted BaseDataset.
+    """Applies a transformation onto the inputted BaseDataset.
 
     Transformation applied as defined in the abstract method transform.
 
@@ -150,7 +152,7 @@ class BaseDatasetTransform(BaseClass):
 
     @abstractmethod
     def transform(self, dataset: BaseDataset) -> BaseDataset:
-        """ Applies a transformation onto the inputted BaseDataset.
+        """Applies a transformation onto the inputted BaseDataset.
 
         Parameters:
         dataset (BaseDataset): The dataset to transform.
@@ -163,13 +165,16 @@ class BaseDatasetTransform(BaseClass):
     def _load(self, d):
         pass
 
+
 def func(self: BaseDataset, other: BaseDatasetTransform) -> BaseDataset:
     return other.transform(self)
 
+
 BaseDataset.__add__ = func
 
+
 class DatasetFromCSV(BaseDataset):
-    """ DatasetFromFile for all dataset objects
+    """DatasetFromFile for all dataset objects
 
     Parameters:
         file_path (str): Relative or absolute to a local CSV file
@@ -187,7 +192,7 @@ import io
 
 
 class DatasetFromCDDSearch(BaseDataset):
-    """ Dataset for retreiving data from CDD via a saved search.
+    """Dataset for retreiving data from CDD via a saved search.
 
     Requires a CDD Token to be set.
 
@@ -212,7 +217,7 @@ class DatasetFromCDDSearch(BaseDataset):
         super().__init__(data=self.data.to_csv(), log=False, **kwargs)
 
     def run_saved_search(self, search_id):
-        """  Uses a CDD Token (passed as search_id) to search saved datasets to find and return its
+        """Uses a CDD Token (passed as search_id) to search saved datasets to find and return its
         related dataset export id.
 
         Parameters:
@@ -257,7 +262,7 @@ class DatasetFromCDDSearch(BaseDataset):
         return pd.read_csv(data_stream)
 
     def get_dataset_cdd_saved_search(self, search_id):
-        """ Uses a CDD Token (passed as search_id) to search saved datasets to find and return its
+        """Uses a CDD Token (passed as search_id) to search saved datasets to find and return its
         related dataset export id. Using the export id, it then checks the export status and
         returns the dataset's data in CSV format.
 
@@ -269,7 +274,7 @@ class DatasetFromCDDSearch(BaseDataset):
         status = "new"
         while True:
             print(f"Export status is {status}, checking in {2**i} seconds...")
-            sleep(2 ** i)
+            sleep(2**i)
             status = self.check_export_status(export_id)
             if status == "finished":
                 print("Export ready!")
@@ -277,10 +282,12 @@ class DatasetFromCDDSearch(BaseDataset):
             i += 1
         return self.get_export(export_id)
 
+
 from rdkit import Chem
 
+
 class CleanStructures(BaseDatasetTransform):
-    """ CleanStructures creates a new dataset from the original dataset by removing
+    """CleanStructures creates a new dataset from the original dataset by removing
     structures that are not valid.
 
     Parameters:
@@ -289,11 +296,13 @@ class CleanStructures(BaseDatasetTransform):
 
     def transform(self, dataset: BaseDataset, dropna_property: bool = True, **kwargs):
         cols = dataset.data.columns.tolist()
+
         def try_clean(s):
             try:
                 return Chem.MolToSmiles(Chem.MolFromSmiles(s))
             except:
                 return None
+
         start_num = len(dataset.data)
         dataset.data[dataset.structure_col] = dataset.data[dataset.structure_col].apply(lambda x: try_clean(x))
         dataset.data = dataset.data.dropna(subset=[dataset.structure_col])
@@ -303,8 +312,9 @@ class CleanStructures(BaseDatasetTransform):
         print(f"{start_num - len(dataset.data)} structure(s) were removed.")
         return dataset
 
+
 class Discretize(BaseDatasetTransform):
-    """ Discretize creates a new dataset from the original dataset by discretizing
+    """Discretize creates a new dataset from the original dataset by discretizing
     the property column.
 
     Parameters:
@@ -318,11 +328,14 @@ class Discretize(BaseDatasetTransform):
         self.prop_cutoff = prop_cutoff
 
     def transform(self, dataset: BaseDataset, **kwargs):
-        dataset.data[dataset.property_col] = [1 if x > self.prop_cutoff else 0 for x in dataset.data[dataset.property_col]]
+        dataset.data[dataset.property_col] = [
+            1 if x > self.prop_cutoff else 0 for x in dataset.data[dataset.property_col]
+        ]
         return dataset
 
+
 class OneHotEncode(BaseDatasetTransform):
-    """ This one hot encodes a given feature column
+    """This one hot encodes a given feature column
 
     Parameters:
         feature_col (str): The feature column to one hot encode.
