@@ -82,9 +82,9 @@ class BaseDataset(BaseClass):
     @property
     def train_dataset(self):
         """Returns the train dataset"""
-        assert (
-            "split" in self.data.columns
-        ), f"Dataset not split yet, please use a splitter or define the split column {self.data.columns}"
+        assert "split" in list(
+            self.data.columns
+        ), f"Dataset not split yet, please use a splitter or define the split column {list(self.data.columns)}"
         train = self.data[self.data["split"] == "train"]
         return train[self.input_cols], train[self.property_col]
 
