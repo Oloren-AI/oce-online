@@ -312,7 +312,7 @@ class _RemoteRuntime:
         self.instruction_buffer = []
         if "data" in response:
             if len(response["data"]["stdout"]) > 0:
-                print(response["data"]["stdout"])
+                print("\n".join([f"REMOTE: {x}" for x in response["data"]["stdout"].split("\n")]))
             return response["data"]["return"]
 
     @property
@@ -325,6 +325,10 @@ _runtime = _RemoteRuntime()  # internal runtime object
 
 def set_runner(runner):
     _runtime.runner = runner
+
+
+def get_runtime():
+    return _runtime
 
 
 class Remote(object):
