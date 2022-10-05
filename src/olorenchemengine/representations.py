@@ -153,8 +153,12 @@ class SMILESRepresentation(BaseRepresentation):
                 smiles = Xs["SMILES"]
             elif "smi" in keys:
                 smiles = Xs["smi"]
+            else:
+                smiles = Xs.iloc[:, 0]
         elif isinstance(Xs, str):
             smiles = [Xs]
+        elif isinstance(Xs, pd.Series):
+            smiles = Xs.tolist()
         else:
             smiles = Xs
 
@@ -324,13 +328,15 @@ class TorchGeometricGraph(BaseRepresentation):
     def dimensions(self):
         return (self.atom_featurizer.length, self.bond_featurizer.length)
 
-    def _convert(self, smiles, y=None):
+    def _convert(self, smiles, y=None, addHs=False, **kwargs):
         from torch_geometric.data import Data
         from torch import from_numpy, Tensor
 
         data = Data()
 
         mol = Chem.MolFromSmiles(smiles)
+        if addHs:
+            mol = Chem.AddHs(mol)
 
         # atoms
         atom_features_list = []
@@ -382,6 +388,12 @@ class TorchGeometricGraph(BaseRepresentation):
         del graph["node_feat"]
 
         return data
+    
+    def convert(
+        self, Xs: Union[list, pd.DataFrame, dict, str], ys: Union[list, pd.Series, np.ndarray] = None, **kwargs
+    ) -> List[Any]:
+        Xs = SMILESRepresentation().convert(Xs)
+        return super().convert(Xs, ys = ys, **kwargs)
 
     def _save(self):
         return {"atom_featurizer": self.atom_featurizer._save(), "bond_featurizer": self.bond_featurizer._save()}
@@ -475,6 +487,18 @@ class BaseVecRepresentation(BaseRepresentation):
         np.save(path.join(path.expanduser("~"), f".oce/cache/vecrep/{self.__class__.__name__}/{input_hash}.npy"), output, allow_pickle=True)
         return output
 
+    def calculate_similarity(self, x1: Union[str, List[str]], x2: Union[str, List[str]],
+        metric: str = "cosine", **kwargs) -> np.ndarray:
+        if isinstance(x1, str):
+            x1 = [x1]
+        if isinstance(x2, str):
+            x2 = [x2]
+        x1 = self.convert(x1)
+        x2 = self.convert(x2)
+        return pairwise_distances(x1, x2, metric=metric, **kwargs)
+        
+        return
+
     def __add__(self, other):
         """ Adds two representations together
 
@@ -544,7 +568,7 @@ class ConcatenatedVecRepresentation(BaseVecRepresentation):
         converted_2 = self.rep2._convert_list(smiles_list, ys=ys, fit = fit)
         return np.concatenate((converted_1, converted_2), axis=1)
 
-    def convert(self, smiles_list, ys = None, fit = False):
+    def convert(self, smiles_list, ys = None, fit = False, **kwargs):
         converted_1 = self.rep1.convert(smiles_list, ys=ys, fit = fit)
         converted_2 = self.rep2.convert(smiles_list, ys=ys, fit = fit)
         return np.concatenate((converted_1, converted_2), axis=1)

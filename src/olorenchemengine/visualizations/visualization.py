@@ -1,4 +1,6 @@
 from cmath import e
+from dataclasses import dataclass
+import dataclasses
 from lib2to3.pgen2.literals import simple_escapes
 import os
 from re import escape
@@ -15,6 +17,7 @@ from olorenchemengine.dataset import *
 from olorenchemengine.uncertainty import *
 from olorenchemengine.interpret import *
 from olorenchemengine.internal import *
+from olorenchemengine.ensemble import *
 
 from rdkit import Chem
 from rdkit.Chem import Draw
@@ -99,7 +102,7 @@ class BaseVisualization(BaseClass):
         """
         return self.__class__.__name__
 
-    def get_html(self, data_str: str, packages: str):
+    def get_html(self, data_str: str, packages: str, **kwargs):
         """ Returns the HTML code for the visualization.
 
         Parameters:
@@ -151,7 +154,7 @@ class BaseVisualization(BaseClass):
 
         return f"<script>{js}</script>" + f"<script> {resize} </script>"
 
-    def render(self, data: dict = None, print_html_js=False) -> str:
+    def render(self, data: dict = None, print_html_js=False, **kwargs) -> str:
         """Render visualization to generate a data_url string.
 
         Parameters:
@@ -163,7 +166,7 @@ class BaseVisualization(BaseClass):
         # Formats the data to be properly JSON
         if data is None:
             data_str = (
-                json.dumps(self.get_data(), separators=(',', ':'))
+                json.dumps(self.get_data(**kwargs), separators=(',', ':'))
                 .replace('"', "&quot;")
                 .replace("None", "null")
                 .replace("NaN", "null")
@@ -199,7 +202,7 @@ class BaseVisualization(BaseClass):
         with open(path, "w+") as f:
             f.write(self.render())
 
-    def render_ipynb(self, data: dict = None, print_html_js=False) -> str:
+    def render_ipynb(self, data: dict = None, print_html_js=False, **kwargs) -> str:
         """Render visualization to IPython notebook IFrame.
 
         Parameters:
@@ -208,9 +211,9 @@ class BaseVisualization(BaseClass):
             print_html_js (bool): Whether or not to print the JavaScript code for the
                 visualization.
         """
-        return IFrame(self.render_data_url(data, print_html_js), width=800, height=600)
+        return IFrame(self.render_data_url(data, print_html_js, **kwargs), width=800, height=600)
 
-    def render_data_url(self, data: dict = None, print_html_js=False) -> str:
+    def render_data_url(self, data: dict = None, print_html_js=False, **kwargs) -> str:
         """Render visualization to data_url string.
 
         Parameters:
@@ -219,7 +222,7 @@ class BaseVisualization(BaseClass):
             print_html_js (bool): Whether or not to print the JavaScript code for the
                 visualization.
         """
-        data_url = "data:text/html," + urllib.parse.quote(self.render(data, print_html_js), safe="")
+        data_url = "data:text/html," + urllib.parse.quote(self.render(data, print_html_js, **kwargs), safe="")
         return data_url
 
     def upload_oas(self):
@@ -355,7 +358,7 @@ class VisualizeCompounds(BaseVisualization):
     @log_arguments
     def __init__(self, dataset: Union[BaseDataset, list, pd.Series, str, Chem.Mol], table_width: int = 1, table_height: int = 5,
         compound_width: int = 500, compound_height: int = 500, annotations = None, kekulize = True,
-        box=False, shuffle=True,log=True, **kwargs):
+        box=False, shuffle=False,log=True, **kwargs):
         self.dataset = dataset
         if issubclass(type(dataset), BaseDataset):
             self.compounds = dataset.data[dataset.structure_col].head(table_width * table_height).tolist()
@@ -393,13 +396,13 @@ class VisualizeCompounds(BaseVisualization):
 
     def get_data(self):
         if self.kekulize:
-            self.compounds = [Chem.MolToSmiles(Chem.MolFromSmiles(s), kekuleSmiles = True) for s in self.compounds]
-        d =  {"smiles": self.compounds,
-            "table_width": self.table_width,
-            "table_height": self.table_height,
-            "compound_width": self.compound_width,
-            "compound_height": self.compound_height,
-            "box": self.box}
+            self.compounds = [Chem.MolToSmiles(Chem.MolFromSmiles(s, sanitize=False), kekuleSmiles = True) for s in self.compounds]
+            d =  {"smiles": self.compounds,
+                "table_width": self.table_width,
+                "table_height": self.table_height,
+                "compound_width": self.compound_width,
+                "compound_height": self.compound_height,
+                "box": self.box}
 
         if not self.annotations is None:
             d.update({"annotations": {col: self.dataset.data[col].tolist() for col in self.annotations}})
@@ -1192,10 +1195,6 @@ class MorganContributions(BaseVisualization):
         """
         return self.__class__.__name__
 
-    def render_ipynb(self, *args, print_html_js=False, **kwargs) -> str:
-        data = self.get_data()
-        return super().render_ipynb(data, *args, print_html_js=print_html_js, **kwargs)
-
 class VisualizeADAN(CompoundScatterPlot):
     """Visualize a model trained on a dataset, by seeing predicted vs true
     colored by ADAN criteria.
@@ -1268,10 +1267,6 @@ class VisualizeADAN(CompoundScatterPlot):
             for i in sorted(self.adan.results[criterion].unique()):
                 print(f"Class {i}: RMSE {np.sqrt(np.mean(self.df[self.adan.results[criterion] == i]['Z']))}")
         return super().get_data()
-
-    def render_ipynb(self, criterion="B", *args, print_html_js=False, **kwargs) -> str:
-        data = self.get_data(criterion=criterion)
-        return super().render_ipynb(data, *args, print_html_js=print_html_js, **kwargs)
 
     @staticmethod
     def get_attributes():
@@ -1455,26 +1450,6 @@ class VisualizeCounterfactual(CompoundScatterPlot):
         self.df["group"] = ["Base"] + [get_cf_type(s) for s in self.cf_engine.cfs[1:]] + ["Factual"] * len(self.factuals)
         self.df["size"] = 12
         return super().get_data()
-
-    def render_ipynb(self, *args, print_html_js=False, **kwargs) -> str:
-        """Render visualization to IPython notebook IFrame.
-
-        Parameters:
-            n (int): Number of points to display
-            pca (bool): Whether or not to plot points in PCA-reduced space. If False,
-                will plot points in similarity-output space.
-            data (dict): Data to be used in visualization. Optional, if not provided,
-                data will be retrieved from `get_data` method.
-            print_html_js (bool): Whether or not to print the JavaScript code for the
-                visualization.
-            **kwargs: Additional keyword arguments to be passed to `get_data` method.
-
-        Returns:
-            str: HTML code for IPython notebook IFrame for visualization.
-        """
-        data = self.get_data()
-        return super().render_ipynb(data, *args, print_html_js=print_html_js, **kwargs)
-
 
 class VisualizeModelSim2(CompoundScatterPlot):
     """ Visualize the connection between a model's error on a given compound and
@@ -1740,3 +1715,68 @@ class ModelPR(BaseVisualization):
         d["score"] = np.around(self.score, decimals=2)
         d["baseline"] = self.baseline
         return d
+
+class BaseErrorWaterfall(BaseVisualization):
+    """ Visualize the error waterfall for a base boosting model.
+
+   Args:
+        model (BaseBoosting): Model to evaluate on. must be base boosting model.
+        x_data (Union[pd.DataFrame, np.ndarray]): Data to predict on using the model
+        y_data (Union[pd.Series, list, np.ndarray], optional): True values to compare to. Defaults to None. If None, then the waterfall plot will be for residuals.
+        normalization (bool, optional): If the data is normalized. Defaults to False.
+    """
+
+    @log_arguments
+    def __init__(
+        self, 
+        model: BaseBoosting, 
+        x_data: Union[pd.DataFrame, np.ndarray], 
+        *y_data: Union[pd.Series, list, np.ndarray], 
+        normalization = False, 
+        log=True, 
+        **kwargs):
+
+        self.model = model
+        self.x_data = x_data
+        if not y_data:
+            self.y_data = None
+        else:
+            self.y_data = y_data
+        self.normalization = normalization
+        super().__init__(log=False)
+        self.packages += ["plotly"]
+        
+        self.df = pd.DataFrame({})
+
+    def get_data(self) -> dict:
+        """Get data for visualization in JSON-like dictionary.
+
+        Returns:
+            dict: Data for visualization."""
+        predictions = self.model.predict(self.x_data, waterfall = True, normalize = self.normalization)
+        data = self.model._waterfall(y_data = self.y_data, normalize = self.normalization)        
+ 
+        diffs = [j - i for i, j in zip(data, data[1:])]
+        diffs.insert(0, data[0])
+        diffs.append(0)
+
+        if self.y_data is not None:
+            model_names = ["Model " + str(i) for i in range(1, len(data))]
+            model_names.insert(0, "Dataset Baseline")
+        else:
+            model_names = ["Model " + str(i+1) for i in range(1, len(data))]
+            model_names.insert(0, "Model 1 Baseline")
+        model_names.append("Boosted Model")
+
+        self.df['diffs'] = diffs
+        self.df['model_names'] = model_names
+
+        text = [f'{val:.2f}' for val in diffs]
+        text[-1] = f'{data[-1]:.2f}'
+        self.df['text'] = text
+
+        w_type = ['relative' for val in diffs]
+        w_type[-1] = 'total'
+        self.df['w_type'] = w_type
+
+        return self.df.to_dict("l")

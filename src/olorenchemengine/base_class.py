@@ -440,24 +440,27 @@ class BaseModel(BaseClass):
 
         # Calibrate model
         if not valid is None and self.setting == "classification":
-            y_pred_valid = self.predict(X_valid)
-
-            from sklearn.calibration import calibration_curve
-
-            prob_pred, prob_true = calibration_curve(y_valid, y_pred_valid, n_bins=min(len(y_valid), 10))
-            prob_pred, prob_true = zip(*[x for x in zip(prob_pred, prob_true) if 0 < x[1] < 1])
-            prob_true = np.array(prob_true)
-            prob_true = np.log(prob_true / (1 - prob_true))
-            prob_pred = np.array(prob_pred)
-            if np.unique(prob_true).shape[0] > 1 and np.unique(prob_pred).shape[0] > 1:
-                self.calibrator = LinearRegression()
-                self.calibrator.fit(prob_pred.reshape(-1, 1), prob_true.reshape(-1, 1))
+            self.calibrate_model(X_valid, y_valid)
 
         # Build error model
         if not error_model is None:
             error_model.build(self, X_train_original, y_train_original)
             self.error_model = error_model
             self.em_status = "built"
+
+    def calibrate(self, X_valid, y_valid):
+        y_pred_valid = self.predict(X_valid)
+
+        from sklearn.calibration import calibration_curve
+
+        prob_pred, prob_true = calibration_curve(y_valid, y_pred_valid, n_bins=min(len(y_valid), 10))
+        prob_pred, prob_true = zip(*[x for x in zip(prob_pred, prob_true) if 0 < x[1] < 1])
+        prob_true = np.array(prob_true)
+        prob_true = np.log(prob_true / (1 - prob_true))
+        prob_pred = np.array(prob_pred)
+        if np.unique(prob_true).shape[0] > 1 and np.unique(prob_pred).shape[0] > 1:
+            self.calibrator = LinearRegression()
+            self.calibrator.fit(prob_pred.reshape(-1, 1), prob_true.reshape(-1, 1))
 
     def fit_class(
         self,
@@ -495,6 +498,15 @@ class BaseModel(BaseClass):
 
         self.fit(X_train, y_train)
 
+    def _unnormalize(self, Y): 
+        if self.normalization == "zscore" and hasattr(self, "ymean") and hasattr(self, "ystd"):
+            result = Y * self.ystd + self.ymean
+        elif issubclass(type(self.normalization), BasePreprocessor):
+            result = self.normalization.inverse_transform(Y)
+        else:
+            result = Y
+        return result
+
     @abstractmethod
     def _predict(self, X: Union[pd.DataFrame, np.ndarray]) -> np.ndarray:
         """To be implemented by the child class; returns the predicted values for provided dataset given preprocessed features.
@@ -516,6 +528,7 @@ class BaseModel(BaseClass):
         return_ci=False,
         return_vis=False,
         skip_preprocess=False,
+        **kwargs,
     ) -> np.ndarray:
         """Calls the _predict method of the model and returns the predicted values for provided dataset.
 
@@ -534,14 +547,9 @@ class BaseModel(BaseClass):
         X_original = X
         if not skip_preprocess:
             X = self.preprocess(X, None, fit=False)
-        Y = self._predict(X)
+        Y = self._predict(X, **kwargs)
         if self.setting == "regression":
-            if self.normalization == "zscore" and hasattr(self, "ymean") and hasattr(self, "ystd"):
-                result = Y * self.ystd + self.ymean
-            elif issubclass(type(self.normalization), BasePreprocessor):
-                result = self.normalization.inverse_transform(Y)
-            else:
-                result = Y
+            result = self._unnormalize(Y)
             if self.calibrator is not None:
                 result = self.calibrator.predict(result.reshape(-1, 1)).reshape(-1)
             if return_ci or return_vis:
@@ -736,14 +744,6 @@ class BaseModel(BaseClass):
 
         return d
 
-    @classmethod
-    def Opt(cls, *args, **kwargs):
-        return {
-            **{"BC_class_name": cls.__name__},
-            **{"args": args},
-            **{"kwargs": kwargs},
-        }
-
     def _save(self) -> dict:
         d = {}
         if hasattr(self, "ymean") and hasattr(self, "ystd"):
@@ -813,8 +813,9 @@ class MakeMultiClassModel(BaseModel):
     Base class for extending the classification capabilities of BaseModel to more than two classes, e.g. classes {W,X,Y,Z}.
     Uses the commonly-implemented One-vs-Rest (OvR) strategy. For each classifier, the class is fitted against all the other classes. The probabilities are then normalized and compared for each class.
 
-    Attributes:
-        individual_classifier (BaseModel): Model generated earlier for binary classification tasks.
+    Parameters:
+        individual_classifier (BaseModel): Model for binary classification tasks,
+            which is to be turned into a multi-class model.
     """
 
     @log_arguments

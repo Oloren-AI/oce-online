@@ -451,6 +451,7 @@ class BaseBoosting(BaseModel):
             models = [models]
 
         self.models = []
+
         for i in range(n):
             for model in models:
                 self.models.append(model.copy())
@@ -469,18 +470,51 @@ class BaseBoosting(BaseModel):
             if self.oof:
                 y_pred = get_oof(model, X_train, y_train, kf)
                 model.fit(X_train, y_train)
-                y_train = y_train - y_pred
             else:
                 model.fit(X_train, y_train)
                 y_pred = np.array(model.predict(X_train)).flatten()
-                y_train = y_train - y_pred
+            y_train = y_train - y_pred
+    
+    def _error_calc(self, residuals):
+        initial_residual, other_residuals = residuals[0], residuals[1:]
+        y = np.array(([initial_residual]))
+        for index in range(len(other_residuals)):
+            curr_residual = other_residuals[index]
+            total_residual = y[-1] - curr_residual
+            y = np.append(y, [total_residual], axis = 0)
+        
+        stdevs = list(np.std(y, axis = 1))
+        return stdevs
 
-    def _predict(self, X):
+    def _waterfall(self, y_data = None, normalize = False):
+        self.stdevs = self._error_calc(self.residuals)
+        if y_data is not None: 
+            naive_mean = np.average(y_data)
+            naive_residuals = [(y - naive_mean)/np.std(y_data) for y in y_data] #normalized so they're in the same format as predict's input
+            if normalize:    
+                naive_residuals = naive_residuals 
+            else: 
+                naive_residuals = self._unnormalize(np.array(naive_residuals))
+            self.residuals.insert(0, naive_residuals)
+            self.stdevs.insert(0, np.std(naive_residuals))  
+        return self.stdevs
+
+    def _predict(self, X, waterfall = False, normalize = False):
+        if waterfall: 
+            self.residuals = [] 
         y = np.zeros((len(X)))
         for model in self.models:
-            y = y + np.array(model.predict(X)).flatten()
+            prediction = np.array(model.predict(X)).flatten()
+            y = y + prediction
+            if waterfall:
+                if normalize: 
+                    self.residuals.append(prediction)
+                else:
+                    self.residuals.append(self._unnormalize(prediction))
         if self.setting == "classification":
             y = np.clip(y, 0, 1)
+            if waterfall: 
+                self.residuals = [np.clip(residual, 0, 1) for residual in self.residuals]
         return y.flatten()
 
     def _save(self):
