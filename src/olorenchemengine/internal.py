@@ -259,6 +259,7 @@ class _RemoteRuntime:
         self.instruction_buffer = []
         self.session_id = None
         self.runner = None
+        self.debug = False
 
     def get_remote_obj(self, remote_id):
         if self.runner is None:
@@ -282,6 +283,10 @@ class _RemoteRuntime:
         return self.send_instructions_blocking()
 
     def send_instructions_blocking(self):
+
+        if self.debug:
+            print("Sending instructions...")
+            print(json.dumps(self.instruction_buffer, indent=4))
 
         import requests
 
@@ -309,11 +314,40 @@ class _RemoteRuntime:
         # print(json.dumps(self.instruction_buffer, indent=4))
         # print(response)
 
-        self.instruction_buffer = []
-        if "data" in response:
-            if len(response["data"]["stdout"]) > 0:
-                print("\n".join([f"REMOTE: {x}" for x in response["data"]["stdout"].split("\n")]))
-            return response["data"]["return"]
+        eid = response["data"]
+
+        execution = None
+
+        def on_snapshot(doc_snapshot, changes, read_time):
+            nonlocal execution
+            for doc in doc_snapshot:
+                execution = doc.to_dict()
+
+        listener = oas_connector.logging_db.collection("executions").document(eid).on_snapshot(on_snapshot)
+
+        while execution is None:
+            pass
+
+        while execution["status"] not in ("Finished", "Error"):
+            pass
+
+        listener.close()
+
+        if execution["status"] == "Error":
+            print(f"Remote Call: {self.instruction_buffer}\nResulted in Traceback:")
+            execution["traceback"]
+            oas_connector.logging_db.collection("executions").document(eid).delete()
+            import sys
+
+            sys.exit(0)
+
+        elif execution["status"] == "Finished":
+            if len(execution["stdout"].strip()) > 0:
+                print("\n".join([f"REMOTE: {x}" for x in execution["stdout"].split("\n")]))
+            oas_connector.logging_db.collection("executions").document(eid).delete()
+            return execution["return"]
+        else:
+            raise NotImplementedError(f"Unknown status {execution['status']}")
 
     @property
     def is_local(self):
@@ -332,15 +366,17 @@ def get_runtime():
 
 
 class Remote(object):
-    def __init__(self, session_id=None, keep_alive=False):
+    def __init__(self, session_id=None, keep_alive=False, debug=False):
         self.keep_alive = keep_alive
         self.session_id = session_id
+        self.debug = False
 
     def __enter__(self):
         _runtime.runtime = "remote"
         if self.session_id is None:
             self.session_id = generate_uuid()
         _runtime.session_id = self.session_id
+        _runtime.debug = self.debug
         return _runtime.session_id
 
     def __exit__(self, type, value, traceback):
@@ -435,6 +471,10 @@ class BaseRemoteSymbol(ABC):
 
             r = _runtime.runtime
             _runtime.runtime = "local"
+
+            with open("out.oce", "wb") as f:
+                pickle.dump(saves(self), f)
+
             with tempfile.NamedTemporaryFile() as tmp:
                 pickle.dump(saves(self), tmp)
                 tmp.flush()
@@ -461,10 +501,6 @@ class BaseRemoteSymbol(ABC):
             return object.__getattribute__(self, key)
 
         if not hasattr(self, "REMOTE_CHILDREN") or key not in self.REMOTE_CHILDREN:
-            try:
-                object.__getattribute__(self, key)  # ensure the attribute exists (otherwise throw error)
-            except AttributeError:
-                print(f"Warning - {key} may not be a valid attribute of {self.__class__.__name__} - continuing anyway")
             if not hasattr(self, "REMOTE_CHILDREN"):
                 self.REMOTE_CHILDREN = {}
             self.REMOTE_CHILDREN[key] = BaseRemoteSymbol(key, self)
