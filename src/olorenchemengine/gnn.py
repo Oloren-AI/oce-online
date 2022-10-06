@@ -3,7 +3,7 @@
 
 from .base_class import *
 from .representations import BaseRepresentation, TorchGeometricGraph
-from .internal import mock_imports
+from olorenchemengine.internal import mock_imports
 
 try:
     import torch
@@ -20,7 +20,7 @@ except:
 
 class BaseLightningModule(BaseClass, LightningModule):
 
-    """ BaseLightningModule allows for the use of a Pytorch Lightning module as a BaseClass to be incorporated into the framework.
+    """BaseLightningModule allows for the use of a Pytorch Lightning module as a BaseClass to be incorporated into the framework.
 
     Parameters:
         optim (str, optional): parameter describing what kind of optimizer to use. Defaults to "adam".
@@ -35,7 +35,7 @@ class BaseLightningModule(BaseClass, LightningModule):
         self.optim = optim
 
     def set_task_type(self, task_type, pos_weight=torch.tensor([1])):
-        """ Sets the task type for the model.
+        """Sets the task type for the model.
 
         Parameters:
             task_type (str): the task type to set the model to.
@@ -48,7 +48,7 @@ class BaseLightningModule(BaseClass, LightningModule):
             self.loss_fun = nn.MSELoss()
 
     def loss(self, y_pred, y_true):
-        """ Calculate the loss for the model.
+        """Calculate the loss for the model.
 
         Parameters:
             y_pred (torch.tensor): the predictions for the model.
@@ -108,10 +108,10 @@ class BaseLightningModule(BaseClass, LightningModule):
 
 class MultiSequential(nn.Sequential):
 
-    """ Helper class to allow for the use of nn.Sequential with multi-input torch.nn modules"""
+    """Helper class to allow for the use of nn.Sequential with multi-input torch.nn modules"""
 
     def forward(self, *input):
-        """ Forward pass of the module.
+        """Forward pass of the module.
 
         Parameters:
             *input (torch.tensor): the input data.
@@ -130,7 +130,7 @@ class MultiSequential(nn.Sequential):
 
 class AttentiveFP(BaseLightningModule):
 
-    """ AttentiveFP is a wrapper for the PyTorch Geometric interpretation of https://pubs.acs.org/doi/10.1021/acs.jmedchem.9b00959.
+    """AttentiveFP is a wrapper for the PyTorch Geometric interpretation of https://pubs.acs.org/doi/10.1021/acs.jmedchem.9b00959.
 
     Parameters:
         hidden_channels (int, optional): the number of hidden channels to use in the model. Defaults to 4.
@@ -178,7 +178,7 @@ class AttentiveFP(BaseLightningModule):
             self.activation = nn.ELU
 
     def create(self, dimensions):
-        """ Create the model.
+        """Create the model.
 
         Parameters:
             dimensions (list): the dimensions of the input data.
@@ -232,7 +232,7 @@ class AttentiveFP(BaseLightningModule):
 
 class BaseTorchGeometricModel(BaseModel):
 
-    """ BaseTorchGeometricModel is a base class for models in the PyTorch Geometric framework.
+    """BaseTorchGeometricModel is a base class for models in the PyTorch Geometric framework.
 
     Parameters:
         network (nn.Module): The network to be used for the model.
@@ -353,7 +353,7 @@ from collections import OrderedDict
 
 class TLFromCheckpoint(BaseLightningModule):
 
-    """ TLFromCheckpoint is a base class for transfer-learning from an OlorenVec PyTorch-lightning checkpoint.
+    """TLFromCheckpoint is a base class for transfer-learning from an OlorenVec PyTorch-lightning checkpoint.
 
     Parameters:
         model_path (str, option): The path to the PyTorch-lightning checkpoint. Ise
@@ -408,4 +408,3 @@ class TLFromCheckpoint(BaseLightningModule):
             )
         )
         self.network = nn.Sequential(OrderedDict([("A", self.A), ("B", self.B)]))
-
