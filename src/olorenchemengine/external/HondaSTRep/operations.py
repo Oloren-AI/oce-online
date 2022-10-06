@@ -203,7 +203,7 @@ try:
     from torch.nn import functional as F
     from torch.utils.data import DataLoader
 except ImportError:
-    oce.mock_imports(globals(), "torch", "nn", "optim", "Variable", "F", "DataLoader")
+    mock_imports(globals(), "torch", "nn", "optim", "Variable", "F", "DataLoader")
 
 
 from tqdm import tqdm

@@ -15,6 +15,13 @@ import olorenchemengine as oce
 from .base_class import *
 from .dataset import *
 
+from unittest.mock import MagicMock
+
+
+def mock_imports(g, *args):
+    for arg in args:
+        g[arg] = MagicMock()
+
 
 def get_all_reps():
     return list(oce.all_subclasses(BaseRepresentation))
@@ -1199,13 +1206,13 @@ from collections import OrderedDict
 try:
     import torch
 except ImportError:
-    oce.mock_imports(globals(), "torch")
+    mock_imports(globals(), "torch")
 
 try:
     import torch_geometric.data
     from torch_geometric.data import DataLoader as PyGDataLoader
 except:
-    oce.mock_imports(globals(), "torch_geometric", "PyGDataLoader")
+    mock_imports(globals(), "torch_geometric", "PyGDataLoader")
 
 from rdkit import Chem
 

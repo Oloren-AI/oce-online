@@ -9,14 +9,23 @@ from olorenchemengine.representations import BaseVecRepresentation, SMILESRepres
 from olorenchemengine.internal import download_public_file
 from .operations import WordVocab, TrfmSeq2seq, Seq2seqDataset
 
+from unittest.mock import MagicMock
+
+
+def mock_imports(g, *args):
+    for arg in args:
+        g[arg] = MagicMock()
+
+
 try:
     from torch.utils.data import DataLoader
     import torch
 except ImportError:
-    oce.mock_imports(globals(), "DataLoader", "torch")
+    mock_imports(globals(), "DataLoader", "torch")
+
 
 class HondaSTRep(BaseVecRepresentation):
-    """ HondaSTRep is an implementation of the molecular representation provided
+    """HondaSTRep is an implementation of the molecular representation provided
     by Honda et al. in `SMILES Transformer: Pre-trained Molecular Fingerprint for Low Data Drug Discovery
     <https://arxiv.org/abs/1911.04738>`."""
 
