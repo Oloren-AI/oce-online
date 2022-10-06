@@ -54,6 +54,7 @@ else:
 
 CONFIG = CONFIG_.copy()
 
+
 def update_config():
     """Update the configuration file.
 
@@ -65,6 +66,7 @@ def update_config():
 
     with contextlib.suppress(ImportError):
         import torch
+
         CONFIG["DEVICE"] = torch.device(CONFIG["MAP_LOCATION"])
         CONFIG["USE_CUDA"] = "cuda" in CONFIG["MAP_LOCATION"]
 
@@ -95,9 +97,10 @@ def remove_config_param(param):
 
 update_config()
 
+
 def ExampleDataFrame():
-    return pd.read_csv("/Users/raunakc/Desktop/Demo CSV Files/class_sample.csv")
     return pd.read_csv("gs://oloren-public-data/sample-csvs/sample_data3.csv")
+
 
 from .base_class import *
 from .basics import *
@@ -114,19 +117,24 @@ from .uncertainty import *
 from .benchmarks import *
 from .hyperparameters import *
 
+
 def ExampleDataset():
     if os.path.exists(path.join(path.expanduser("~"), f".oce/exampledataset.oce")):
         return load(path.join(path.expanduser("~"), f".oce/exampledataset.oce"))
     else:
-        dataset =  BaseDataset(data = ExampleDataFrame().to_csv(), structure_col = "Smiles",
-            property_col = "pChEMBL Value") + RandomSplit()
+        dataset = (
+            BaseDataset(data=ExampleDataFrame().to_csv(), structure_col="Smiles", property_col="pChEMBL Value")
+            + RandomSplit()
+        )
         save(dataset, path.join(path.expanduser("~"), f".oce/exampledataset.oce"))
         return dataset
+
 
 def BACEDataset():
     df = pd.read_csv(download_public_file("MoleculeNet/load_bace_regression.csv"))
     df["split"] = df["split"].replace({"Train": "train", "Valid": "valid", "Test": "test"})
-    return oce.BaseDataset(data = df.to_csv(), structure_col = "smiles", property_col = "pIC50")
+    return oce.BaseDataset(data=df.to_csv(), structure_col="smiles", property_col="pIC50")
+
 
 def test_oce():
     """Convenience function to test all functions of the oce package."""
@@ -146,4 +154,3 @@ def test_oce():
     save(model, "model.oce")
     _ = load("model.oce")
     os.remove("model.oce")
-
