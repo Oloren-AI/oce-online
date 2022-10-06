@@ -1,7 +1,12 @@
 """ Defines the model architecture of SPGNN.
 """
 
-from olorenchemengine.internal import mock_imports
+from unittest.mock import MagicMock
+
+
+def mock_imports(g, *args):
+    for arg in args:
+        g[arg] = MagicMock()
 
 try:
     import torch
