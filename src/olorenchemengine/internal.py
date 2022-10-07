@@ -291,8 +291,9 @@ class _RemoteRuntime:
 
     def send_instructions_blocking(self):
 
-        print("Sending instructions...")
-        print(json.dumps(_truncate_json(self.instruction_buffer), indent=4))
+        if self.debug:
+            print("Sending instructions...")
+            print(json.dumps(_truncate_json(self.instruction_buffer), indent=4))
 
         import requests
 
@@ -367,7 +368,7 @@ class Remote(object):
     def __init__(self, session_id=None, keep_alive=False, debug=False):
         self.keep_alive = keep_alive
         self.session_id = session_id
-        self.debug = False
+        self.debug = debug
 
     def __enter__(self):
         _runtime.runtime = "remote"
