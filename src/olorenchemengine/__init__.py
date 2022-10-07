@@ -99,7 +99,7 @@ update_config()
 
 
 def ExampleDataFrame():
-    return pd.read_csv("gs://oloren-public-data/sample-csvs/sample_data3.csv")
+    return pd.read_csv("https://storage.googleapis.com/oloren-public-data/sample-csvs/sample_data3.csv")
 
 
 from .base_class import *
