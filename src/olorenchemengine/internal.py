@@ -14,19 +14,16 @@ import pyrebase  # Default pyrebase is pyrebase3 which won't work. Need to insta
 from google.cloud.firestore import Client
 from google.oauth2.credentials import Credentials
 import sys
+from unittest.mock import MagicMock
 
 import olorenchemengine
 
 sys.modules["olorenautoml"] = olorenchemengine  # important for backwards compatibility of some models
 
 
-from unittest.mock import MagicMock
-
-
 def mock_imports(g, *args):
     for arg in args:
         g[arg] = MagicMock()
-
 
 def all_subclasses(cls):
     """Helper function to return all subclasses of class"""

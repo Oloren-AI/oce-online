@@ -1,7 +1,4 @@
-from unittest.mock import MagicMock
-def mock_imports(g, *args):
-    for arg in args:
-        g[arg] = MagicMock()
+from olorenchemengine.internal import mock_imports
 
 try:
     import torch
