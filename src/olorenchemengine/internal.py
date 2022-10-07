@@ -25,6 +25,7 @@ def mock_imports(g, *args):
     for arg in args:
         g[arg] = MagicMock()
 
+
 def all_subclasses(cls):
     """Helper function to return all subclasses of class"""
     return set(cls.__subclasses__()).union([s for c in cls.__subclasses__() for s in all_subclasses(c)])
@@ -290,9 +291,8 @@ class _RemoteRuntime:
 
     def send_instructions_blocking(self):
 
-        if self.debug:
-            print("Sending instructions...")
-            print(json.dumps(self.instruction_buffer, indent=4))
+        print("Sending instructions...")
+        print(json.dumps(_truncate_json(self.instruction_buffer), indent=4))
 
         import requests
 
@@ -310,15 +310,6 @@ class _RemoteRuntime:
         )
 
         response = response.json()
-        if "traceback" in response:
-            print(f"Remote Call: {self.instruction_buffer}\nResulted in Traceback:")
-            print(response["traceback"])
-            import sys
-
-            sys.exit(0)
-
-        # print(json.dumps(self.instruction_buffer, indent=4))
-        # print(response)
 
         eid = response["data"]
 
@@ -341,7 +332,7 @@ class _RemoteRuntime:
 
         if execution["status"] == "Error":
             print(f"Remote Call: {self.instruction_buffer}\nResulted in Traceback:")
-            execution["traceback"]
+            print(execution["traceback"])
             oas_connector.logging_db.collection("executions").document(eid).delete()
             import sys
 
@@ -351,6 +342,7 @@ class _RemoteRuntime:
             if len(execution["stdout"].strip()) > 0:
                 print("\n".join([f"REMOTE: {x}" for x in execution["stdout"].split("\n")]))
             oas_connector.logging_db.collection("executions").document(eid).delete()
+            self.instruction_buffer = []
             return execution["return"]
         else:
             raise NotImplementedError(f"Unknown status {execution['status']}")
@@ -412,6 +404,19 @@ def parametrize_args_kwargs(args, kwargs):
     parameterized_kwargs = {k: parameterize(v) for k, v in kwargs.items()}
     return {"args": parameterized_args, "kwargs": parameterized_kwargs}
 
+
+def _truncate_json(json_obj, max_length=40):
+    if isinstance(json_obj, str):
+        if len(json_obj) > max_length:
+            return f"{json_obj[:max_length]}..."
+        else:
+            return json_obj
+    elif isinstance(json_obj, list):
+        return [_truncate_json(x, max_length) for x in json_obj]
+    elif isinstance(json_obj, dict):
+        return {_truncate_json(k): _truncate_json(v, max_length) for k, v in json_obj.items()}
+    else:
+        return json_obj
 
 class BaseRemoteSymbol(ABC):
     @log_arguments

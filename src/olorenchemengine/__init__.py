@@ -119,15 +119,11 @@ from .hyperparameters import *
 
 
 def ExampleDataset():
-    if os.path.exists(path.join(path.expanduser("~"), f".oce/exampledataset.oce")):
-        return load(path.join(path.expanduser("~"), f".oce/exampledataset.oce"))
-    else:
-        dataset = (
-            BaseDataset(data=ExampleDataFrame().to_csv(), structure_col="Smiles", property_col="pChEMBL Value")
-            + RandomSplit()
-        )
-        save(dataset, path.join(path.expanduser("~"), f".oce/exampledataset.oce"))
-        return dataset
+    dataset = (
+        BaseDataset(data=ExampleDataFrame().to_csv(), structure_col="Smiles", property_col="pChEMBL Value")
+        + RandomSplit()
+    )
+    return dataset
 
 
 def BACEDataset():
