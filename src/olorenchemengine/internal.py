@@ -242,8 +242,7 @@ def log_arguments(func: Callable[..., None]) -> Callable[..., None]:
     return wrapper
 
 def _create_BC_if_necessary(obj):
-    if type(obj) == str:
-        obj = json.loads(obj)
+    if type(obj) != dict: return obj
     obj_str = json.dumps(obj)
     return obj if "BC_class_name" not in obj_str else create_BC(obj)
 
