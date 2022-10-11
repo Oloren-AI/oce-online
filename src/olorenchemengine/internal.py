@@ -241,11 +241,16 @@ def log_arguments(func: Callable[..., None]) -> Callable[..., None]:
 
     return wrapper
 
+def _create_BC_if_necessary(obj):
+    if type(obj) == str:
+        obj = json.loads(obj)
+    obj_str = json.dumps(obj)
+    return obj if "BC_class_name" not in obj_str else create_BC(obj)
 
 def deparametrize_args_kwargs(params):
     args = params["args"]
     kwargs = params["kwargs"]
-    return [create_BC(arg) for arg in args], {key: create_BC(kwarg) for key, kwarg in kwargs.items()}
+    return [_create_BC_if_necessary(arg) for arg in args], {key: create_BC(kwarg) for key, kwarg in kwargs.items()}
 
 
 def recursive_get_attr(parent, attr):
