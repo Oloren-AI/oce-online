@@ -242,9 +242,7 @@ def log_arguments(func: Callable[..., None]) -> Callable[..., None]:
     return wrapper
 
 def _create_BC_if_necessary(obj):
-    if type(obj) != dict: return obj
-    obj_str = json.dumps(obj)
-    return obj if "BC_class_name" not in obj_str else create_BC(obj)
+    return obj if type(obj) is not dict else create_BC(obj)
 
 def deparametrize_args_kwargs(params):
     args = params["args"]
@@ -302,7 +300,7 @@ class _RemoteRuntime:
         import requests
 
         response = requests.post(
-            "http://api.oloren.ai:5000/firestore/run_remote/",
+            "http://3.145.106.119:8000/firestore/run_remote/",
             params={
                 "instructions": json.dumps(self.instruction_buffer),
                 "uid": oas_connector.authenticate(),
