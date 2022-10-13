@@ -456,7 +456,6 @@ class BaseRemoteSymbol(ABC):
 
         else:
             if not hasattr(self.REMOTE_PARENT, "REMOTE_ID"):
-                print("Hello calling upload remote fn")
                 self.REMOTE_PARENT._upload_remote()
 
             _runtime.add_instruction(
@@ -484,8 +483,6 @@ class BaseRemoteSymbol(ABC):
         try:
             oas_connector.authenticate()
             REMOTE_ID = generate_uuid()
-
-            print(f"Uploading {self.__class__.__name__}")
 
             r = _runtime.runtime
             _runtime.runtime = "local"
@@ -766,8 +763,11 @@ def save(model: BaseClass, fname: str):
     """
 
     if "BaseRemoteSymbol" in str(type(model)):
-        # In this case, we should load the model from the remote server
-        raise ValueError("Cannot save remote objects")
+        oas_connector.authenticate()
+        REMOTE_ID = model.REMOTE_ID
+        oas_connector.storage.child(
+                f"{oas_connector.uid}/sessions/{_runtime.session_id}" + f"/{REMOTE_ID}.oce"
+        ).download(fname)
     else:
         save_dict = saves(model)
         with open(fname, "wb+") as f:
