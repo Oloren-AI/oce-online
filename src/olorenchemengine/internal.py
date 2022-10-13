@@ -269,6 +269,7 @@ class _RemoteRuntime:
         self.session_id = None
         self.runner = None
         self.debug = False
+        self.remote_url = None
 
     def get_remote_obj(self, remote_id):
         if self.runner is None:
@@ -300,7 +301,7 @@ class _RemoteRuntime:
         import requests
 
         response = requests.post(
-            "http://3.145.106.119:8000/firestore/run_remote/",
+            f"{self.remote_url}/firestore/run_remote/",
             params={
                 "instructions": json.dumps(self.instruction_buffer),
                 "uid": oas_connector.authenticate(),
@@ -367,10 +368,11 @@ def get_runtime():
 
 
 class Remote(object):
-    def __init__(self, session_id=None, keep_alive=False, debug=False):
+    def __init__(self, remote_url, session_id=None, keep_alive=False, debug=False):
         self.keep_alive = keep_alive
         self.session_id = session_id
         self.debug = debug
+        self.remote_url = remote_url
 
     def __enter__(self):
         _runtime.runtime = "remote"
@@ -378,6 +380,7 @@ class Remote(object):
             self.session_id = generate_uuid()
         _runtime.session_id = self.session_id
         _runtime.debug = self.debug
+        _runtime.remote_url = self.remote_url
         return _runtime.session_id
 
     def __exit__(self, type, value, traceback):
@@ -453,6 +456,7 @@ class BaseRemoteSymbol(ABC):
 
         else:
             if not hasattr(self.REMOTE_PARENT, "REMOTE_ID"):
+                print("Hello calling upload remote fn")
                 self.REMOTE_PARENT._upload_remote()
 
             _runtime.add_instruction(
@@ -485,9 +489,6 @@ class BaseRemoteSymbol(ABC):
 
             r = _runtime.runtime
             _runtime.runtime = "local"
-
-            with open("out.oce", "wb") as f:
-                pickle.dump(saves(self), f)
 
             with tempfile.NamedTemporaryFile() as tmp:
                 pickle.dump(saves(self), tmp)
@@ -763,9 +764,14 @@ def save(model: BaseClass, fname: str):
         model (BaseClass): the object to be saved
         fname (str): the file name to save the model to
     """
-    save_dict = saves(model)
-    with open(fname, "wb+") as f:
-        pickle.dump(save_dict, f)
+
+    if "BaseRemoteSymbol" in str(type(model)):
+        # In this case, we should load the model from the remote server
+        raise ValueError("Cannot save remote objects")
+    else:
+        save_dict = saves(model)
+        with open(fname, "wb+") as f:
+            pickle.dump(save_dict, f)
 
 
 def load(fname: str) -> BaseClass:
