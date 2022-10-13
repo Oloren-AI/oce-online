@@ -11,6 +11,7 @@ with oce.Remote("http://api.oloren.ai:5000", debug=False) as sid:
     )
     model.fit(*dataset.train_dataset)
     model.predict(["CC(=O)Nc1ccc(O)cc1"])
+    oce.save(model, "demo.oce")
 
 # TODO: Save the above model locally and load it back in (IN ANOTHER SESSION!!!)
 
