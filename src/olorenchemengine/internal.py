@@ -1,4 +1,6 @@
 import base64
+import numpy as np
+import pandas as pd
 import tempfile
 import contextlib
 import hashlib
@@ -405,10 +407,20 @@ def pretty_args_kwargs(args, kwargs):
     parameterized_kwargs = {k: parameterize(v) for k, v in kwargs.items()}
     return f"(args={parameterized_args}, kwargs={parameterized_kwargs})"
 
+def _paremetrize_if_necessary(obj):
+    if isinstance(obj, BaseRemoteSymbol):
+        return parameterize(obj)
+    elif isinstance(obj, pd.Series):
+        return list(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    with contextlib.suppress(Exception):
+        json.dumps(obj)
+        return obj
 
 def parametrize_args_kwargs(args, kwargs):
-    parameterized_args = [parameterize(arg) for arg in args]
-    parameterized_kwargs = {k: parameterize(v) for k, v in kwargs.items()}
+    parameterized_args = [_paremetrize_if_necessary(arg) for arg in args]
+    parameterized_kwargs = {k: _paremetrize_if_necessary(v) for k, v in kwargs.items()}
     return {"args": parameterized_args, "kwargs": parameterized_kwargs}
 
 
@@ -520,8 +532,23 @@ class BaseRemoteSymbol(ABC):
         return self.REMOTE_CHILDREN[key]
 
     def __call__(self, *args, **kwargs):
-        return BaseRemoteSymbol("CALL", self, args=args, kwargs=kwargs)
+        # TODO: move logic from init to here, then return baseremotesymbol only if return type is none
 
+        remote_id = generate_uuid()
+        out = _runtime.add_instruction(
+            {
+                "type": "CALL",
+                "PARENT_REMOTE_ID": self.REMOTE_ID,
+                "REMOTE_ID": remote_id,
+                "ARGUMENTS": parametrize_args_kwargs(args, kwargs),
+            }
+        )
+
+        if self.REMOTE_SYMBOL_NAME == "render_ipynb":
+            from IPython.display import IFrame, display
+            display(IFrame(out, width=800, height=600))
+
+        return out if out is not None else RemoteObj(remote_id)
 
 class BaseClass(BaseRemoteSymbol):
     """BaseClass is the base class for all models.

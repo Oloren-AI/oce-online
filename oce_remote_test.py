@@ -15,11 +15,13 @@ with oce.Remote("http://api.oloren.ai:5000", debug=True) as sid:
     print("Done saving model")
 
 # Load a model and predict with it (in another session!!)
-with oce.Remote("http://api.oloren.ai:5000", debug=False) as sid:
+with oce.Remote("http://api.oloren.ai:5000", debug=True) as sid:
     print("Loading model")
     model = oce.load("demo.oce")
     print("Done loading model")
-    print(model.predict(["CC(=O)Nc1ccc(O)cc1"]))
+    x = model.predict("CC(=O)Nc1ccc(O)cc1")
+    print(x)
+    print(type(x))
 
 # # Generate a visualization on a dataset
 # with oce.Remote("http://api.oloren.ai:5000", debug=False) as sid:

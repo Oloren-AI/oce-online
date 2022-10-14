@@ -240,12 +240,12 @@ def test_smiles_transformer(example_data):
     train_predict_slf(model, example_data)
 
 
-@pytest.mark.parametrize("rep", [(rep) for rep in oce.BaseCompoundVecRepresentation.AllInstances()])
-def test_all_base_compound_vecs(example_data, rep):
-    if isinstance(rep, oce.MordredDescriptor):
-        return  # Mordred does not play well with pytest
-    model = oce.RandomForestModel(rep, n_estimators=10)
-    train_predict_slf(model, example_data)
+# @pytest.mark.parametrize("rep", [(rep) for rep in oce.BaseCompoundVecRepresentation.AllInstances()])
+# def test_all_base_compound_vecs(example_data, rep):
+#     if isinstance(rep, oce.MordredDescriptor):
+#         return  # Mordred does not play well with pytest
+#     model = oce.RandomForestModel(rep, n_estimators=10)
+#     train_predict_slf(model, example_data)
 
 def test_molnet_single_task():
     mn_datasets = [
