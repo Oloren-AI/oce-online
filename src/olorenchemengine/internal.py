@@ -562,6 +562,9 @@ class BaseClass(BaseRemoteSymbol):
         _load: loads an instance of a BaseClass from a dictionary (abstract method to be implmented by subclasses)
     """
 
+    def __init__(self):
+        pass
+
     @classmethod
     def Registry(cls):
         """Registry is a recursive method to create a dictionary of all subclasses of BaseClass, with the key being the name of the subclass and the value being the subclass itself."""
