@@ -437,7 +437,7 @@ def _truncate_json(json_obj, max_length=40):
     else:
         return json_obj
 
-class BaseRemoteSymbol(ABC):
+class BaseRemoteSymbol:
     @log_arguments
     def __init__(self, REMOTE_SYMBOL_NAME, REMOTE_PARENT, args=None, kwargs=None) -> None:
         if _runtime.is_local:

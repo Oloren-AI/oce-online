@@ -14,11 +14,11 @@ except:
 try:
 
     from pytorch_lightning import LightningModule
+    lm_imports = (LightningModule, BaseClass)
 except:
-    LightningModule = object
+    lm_imports = (BaseClass,)
 
-
-class BaseLightningModule(LightningModule, BaseClass):
+class BaseLightningModule(*lm_imports):
 
     """ BaseLightningModule allows for the use of a Pytorch Lightning module as a BaseClass to be incorporated into the framework.
 
@@ -31,7 +31,7 @@ class BaseLightningModule(LightningModule, BaseClass):
     hascollate_fn = False
 
     def __init__(self, optim: str = "adam", input_dimensions: Tuple = None):
-        LightningModule.__init__(self)
+        super().__init__()
         self.optim = optim
 
     def set_task_type(self, task_type, pos_weight=torch.tensor([1])):
