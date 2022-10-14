@@ -198,6 +198,7 @@ def get_default_args(func):
     return {k: v.default for k, v in signature.parameters.items() if v.default is not inspect.Parameter.empty}
 
 
+
 def log_arguments(func: Callable[..., None]) -> Callable[..., None]:
     """
     log_arguments is a decorator which logs the arguments of a BaseClass constructor to instance variables for use in
@@ -585,6 +586,10 @@ class BaseClass(BaseRemoteSymbol):
         obj_copy._load(self._save())
         return obj_copy
 
+class RemoteObj(BaseRemoteSymbol):
+    """Dummy object to represent remote objects."""
+    def __init__(self, remote_id):
+        self.REMOTE_ID = remote_id
 
 def parameterize(object: Union[BaseClass, list, int, float, str, None]) -> dict:
     """parameterize is a recursive method which creates a dictionary of all arguments necessary to instantiate a BaseClass object.
@@ -762,12 +767,13 @@ def save(model: BaseClass, fname: str):
         fname (str): the file name to save the model to
     """
 
-    if "BaseRemoteSymbol" in str(type(model)):
-        oas_connector.authenticate()
+    if hasattr(model, "REMOTE_ID"):
+
         REMOTE_ID = model.REMOTE_ID
         oas_connector.storage.child(
-                f"{oas_connector.uid}/sessions/{_runtime.session_id}" + f"/{REMOTE_ID}.oce"
-        ).download(fname)
+                f"{oas_connector.uid}/sessions/{_runtime.session_id}/{REMOTE_ID}.oce").download("", fname,
+                token=oas_connector.authenticate()
+        )
     else:
         save_dict = saves(model)
         with open(fname, "wb+") as f:
@@ -783,9 +789,17 @@ def load(fname: str) -> BaseClass:
     Returns:
         BaseClass: the BaseClass object which as been recreated from the file
     """
-    with open(fname, "rb") as f:
-        d = pickle.load(f)
-    return loads(d)
+    if _runtime.is_local:
+        with open(fname, "rb") as f:
+            d = pickle.load(f)
+        return loads(d)
+    else:
+        oas_connector.authenticate()
+        REMOTE_ID = generate_uuid()
+        response = oas_connector.storage.child(
+            f"{oas_connector.uid}/sessions/{_runtime.session_id}" + f"/{REMOTE_ID}.oce"
+        ).put(fname, oas_connector.uid_token)
+        return RemoteObj(REMOTE_ID)
 
 
 def pretty_params(base: Union[BaseClass, dict]) -> dict:
