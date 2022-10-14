@@ -31,7 +31,7 @@ class BaseLightningModule(BaseClass, LightningModule):
     hascollate_fn = False
 
     def __init__(self, optim: str = "adam", input_dimensions: Tuple = None):
-        super().__init__()
+        LightningModule.__init__(self)
         self.optim = optim
 
     def set_task_type(self, task_type, pos_weight=torch.tensor([1])):
