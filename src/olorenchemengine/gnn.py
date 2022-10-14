@@ -18,7 +18,7 @@ except:
     LightningModule = object
 
 
-class BaseLightningModule(BaseClass, LightningModule):
+class BaseLightningModule(LightningModule, BaseClass):
 
     """ BaseLightningModule allows for the use of a Pytorch Lightning module as a BaseClass to be incorporated into the framework.
 
