@@ -306,12 +306,12 @@ class BaseTorchGeometricModel(BaseModel):
             from torch.utils.data import DataLoader as TorchDataLoader
 
             dataloader = TorchDataLoader(
-                X_train, batch_size=self.batch_size, shuffle=True, num_workers=8, collate_fn=self.network.collate_fn
+                X_train, batch_size=self.batch_size, shuffle=True, num_workers=oce.CONFIG["NUM_WORKERS"], collate_fn=self.network.collate_fn
             )
         else:
             from torch_geometric.data import DataLoader as PyGDataLoader
 
-            dataloader = PyGDataLoader(X_train, batch_size=self.batch_size, shuffle=True, num_workers=8)
+            dataloader = PyGDataLoader(X_train, batch_size=self.batch_size, shuffle=True, num_workers=oce.CONFIG["NUM_WORKERS"])
 
         self.trainer.fit(self.network, dataloader)
 
