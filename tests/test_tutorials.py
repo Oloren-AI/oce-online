@@ -6,7 +6,14 @@ import pandas as pd
 __author__ = "Oloren AI"
 __copyright__ = "Oloren AI"
 
+def remote(func):
+    def wrapper(*args, **kwargs):
+        with oce.Remote("http://api.oloren.ai:5000") as remote:
+            func(*args, **kwargs)
+    return wrapper
+
 @pytest.mark.timeout(300)
+@remote
 def test_0():
     import olorenchemengine as oce
     import pandas as pd
