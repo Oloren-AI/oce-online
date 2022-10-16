@@ -321,12 +321,12 @@ class BaseTorchGeometricModel(BaseModel):
             from torch.utils.data import DataLoader as TorchDataLoader
 
             dataloader = TorchDataLoader(
-                X, batch_size=self.batch_size, num_workers=8, collate_fn=self.network.collate_fn
+                X, batch_size=self.batch_size, num_workers=oce.CONFIG["NUM_WORKERS"], collate_fn=self.network.collate_fn
             )
         else:
             from torch_geometric.data import DataLoader as PyGDataLoader
 
-            dataloader = PyGDataLoader(X, batch_size=self.batch_size, num_workers=8)
+            dataloader = PyGDataLoader(X, batch_size=self.batch_size, num_workers=oce.CONFIG["NUM_WORKERS"])
 
         predictions = [x for x in self.trainer.predict(self.network, dataloader)]
 
