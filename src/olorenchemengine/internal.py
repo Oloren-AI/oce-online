@@ -282,7 +282,7 @@ class _RemoteRuntime:
 
     def add_instruction(self, instruction):
         self.instruction_buffer.append(instruction)
-        if instruction["type"] == "CALL" or self.debug:
+        if instruction["type"] == "CALL":
             x = self.send_instructions_blocking()
             if x is not None and isinstance(x, str):
                 return json.loads(x)
@@ -303,18 +303,32 @@ class _RemoteRuntime:
 
         import requests
 
-        response = requests.post(
-            f"{self.remote_url}/firestore/run_remote/",
-            params={
-                "instructions": json.dumps(self.instruction_buffer),
-                "uid": oas_connector.authenticate(),
-                "sid": self.session_id,
-            },
-            headers={
-                "accept": "application/json",
-                "content-type": "application/x-www-form-urlencoded",
-            },
-        )
+        response = None
+
+        for _ in range(3):
+            response = requests.post(
+                f"{self.remote_url}/firestore/run_remote/",
+                params={
+                    "instructions": json.dumps(self.instruction_buffer),
+                    "uid": oas_connector.authenticate(),
+                    "sid": self.session_id,
+                },
+                headers={
+                    "accept": "application/json",
+                    "content-type": "application/x-www-form-urlencoded",
+                },
+            )
+
+            if response.status_code == 200:
+                break
+            elif response.status_code == 502:
+                import time
+                time.sleep(1) # allow time to recover
+            else:
+                raise ValueError(f"Unknown error code {response.status_code} - {response.text}")
+
+        if response.status_code != 200:
+            raise ValueError(f"Error code {response.status_code} - {response.text}")
 
         response = response.json()
 
@@ -754,7 +768,7 @@ def create_BC(d: dict) -> BaseClass:
     kwargs = {}
     if "kwargs" in d.keys():
         for k, v in d["kwargs"].items():
-            if isinstance(v, dict) and ("BC_class_name" in v.keys() or "REMOTE_ID" in arg.keys()):
+            if isinstance(v, dict) and ("BC_class_name" in v.keys() or "REMOTE_ID" in v.keys()):
                 kwargs[k] = create_BC(v)
             else:
                 kwargs[k] = v
