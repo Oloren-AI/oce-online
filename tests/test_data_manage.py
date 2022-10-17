@@ -14,6 +14,12 @@ import os
 __author__ = "Oloren AI"
 __copyright__ = "Oloren AI"
 
+def remote(func):
+    def wrapper(*args, **kwargs):
+        with oce.Remote("http://api.oloren.ai:5000") as remote:
+            func(*args, **kwargs)
+    return wrapper
+
 
 def test_datasetfromcsv():
     dataset = oce.DatasetFromCSV(
@@ -27,6 +33,7 @@ def test_datasetfromcsv():
     assert len(x_train) == len(y_train)
     assert len(x_test) == len(y_test)
     assert len(x_val) == len(y_val)
+
 
 
 def test_manage():
@@ -54,6 +61,7 @@ def test_manage():
 import warnings
 
 
+
 def test_sheets_manager():
     if "GOOGLE_CREDENTIALS_FILENAME" not in oce.CONFIG and "GOOGLE_SERVICE_ACC_FILENAME" not in oce.CONFIG:
         warnings.warn(UserWarning("Skipping sheets manager test due to lack of supplied credentials."))
@@ -78,6 +86,7 @@ def test_sheets_manager():
     error2 = np.array(error2, dtype=float)
 
     assert np.allclose(error1, error2)
+
 
 
 def test_top_models_admet():

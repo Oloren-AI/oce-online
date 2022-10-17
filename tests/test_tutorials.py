@@ -13,7 +13,7 @@ def remote(func):
     return wrapper
 
 @pytest.mark.timeout(300)
-@remote
+
 def test_0():
     import olorenchemengine as oce
     import pandas as pd

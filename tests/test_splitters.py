@@ -10,6 +10,11 @@ __copyright__ = "Oloren AI"
 
 '''There are currently no tests for DateSplitter as sample data does not have date values.
 '''
+def remote(func):
+    def wrapper(*args, **kwargs):
+        with oce.Remote("http://api.oloren.ai:5000") as remote:
+            func(*args, **kwargs)
+    return wrapper
 
 @pytest.fixture
 def example_data1():
@@ -29,6 +34,7 @@ def example_data3():
     df = pd.read_csv(file_path)
     return df
 
+
 def test_run_random(example_data3):
     splitter = oce.RandomSplit(split_proportions=[0.8, 0.1, 0.1])
     for i in splitter.split(example_data3):
@@ -42,11 +48,13 @@ Test passes with split_proportions = [0.8, 0.0, 0.2].
 Test fails with split_proportions = [0.8, 0.1, 0.1]: "ValueError: The test_size = 1 should be greater or equal to the number of classes = 2"
 Test fails with split_proportions = [0.8, 0.2, 0.0]: "ValueError: train_size=1.0 should be either positive and smaller than the number of samples 10 or a float in the (0, 1) range"
 '''
+
 def test_run_stratified(example_data3):
     splitter = oce.StratifiedSplitter(split_proportions=[0.8, 0.1, 0.1], value_col='pChEMBL Value')
     for i in splitter.split(example_data3):
         assert(isinstance(i, pd.DataFrame))
         assert(len(i) > 0)
+
 
 def test_run_scaffold(example_data3):
     splitter = oce.ScaffoldSplit(scaffold_filter_threshold=1, split_type='murcko', split_proportions=[0.8, 0.1, 0.1])
@@ -58,6 +66,7 @@ def test_run_scaffold(example_data3):
     for i in splitter.split(example_data3):
         assert(isinstance(i, pd.DataFrame))
         assert(len(i) > 0)
+
 
 def test_run_property(example_data1):
     splitter = oce.PropertySplit(property_col='pChEMBL Value', threshold=None, noise=0.1, categorical=False, split_proportions=[0.8, 0.1, 0.1])
@@ -78,6 +87,7 @@ def test_run_property(example_data1):
  - Check if true split proportions are within 0.05 or 0.1 of user-defined split proportions
  - Test case with empty validation split (TT/train test split)
 '''
+
 def test_split_props_random(example_data3):
     split_proportions = [0.8, 0.1, 0.1]
 
@@ -104,6 +114,7 @@ def test_split_props_random(example_data3):
 '''For the [0.8, 0.0, 0.2] case, it is found that the validation split has samples in it despite 0 split setting.
 Test won't show this as there is still the run error from the first test case [0.8, 0.1, 0.1], described in test_run_stratified.
 '''
+
 def test_split_props_stratified(example_data3):
     split_proportions = [0.8, 0.1, 0.1]
 
@@ -126,6 +137,7 @@ def test_split_props_stratified(example_data3):
             assert(actual_split_prop == 0)
         else:
             assert(abs(actual_split_prop - split_proportions_TT[i]) < 0.05)
+
 
 def test_split_props_scaffold_murcko(example_data3):
     split_proportions = [0.8, 0.1, 0.1]
@@ -150,6 +162,7 @@ def test_split_props_scaffold_murcko(example_data3):
         else:
             assert(abs(actual_split_prop - split_proportions_TT[i]) < 0.05)
 
+
 def test_split_props_scaffold_kmeans_murcko(example_data3):
     split_proportions = [0.33, 0.33, 0.33]
 
@@ -172,6 +185,7 @@ def test_split_props_scaffold_kmeans_murcko(example_data3):
             assert(actual_split_prop == 0)
         else:
             assert(abs(actual_split_prop - split_proportions_TT[i]) < 0.1)
+
 
 def test_split_props_property(example_data1):
     split_proportions = [0.8, 0.1, 0.1]
@@ -197,6 +211,7 @@ def test_split_props_property(example_data1):
             assert(abs(actual_split_prop - split_proportions_TT[i]) < 0.1)
 
 
+
 def test_split_props_property_thresh(example_data1):
     splitter = oce.PropertySplit(property_col='pChEMBL Value', threshold=7, noise=0.1, categorical=False)
     split = splitter.split(example_data1)
@@ -209,6 +224,7 @@ def test_split_props_property_thresh(example_data1):
 
 '''Check if saved and loaded splitter parameters equal the true parameters before save/load.
 '''
+
 def test_save_load(example_data1, example_data3, tmp_path):
     d = tmp_path / "sub"
     d.mkdir()

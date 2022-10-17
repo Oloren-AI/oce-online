@@ -321,9 +321,9 @@ class _RemoteRuntime:
 
             if response.status_code == 200:
                 break
-            elif response.status_code == 502:
+            elif response.status_code == 400:
                 import time
-                time.sleep(1) # allow time to recover
+                time.sleep(10) # allow time to recover
             else:
                 raise ValueError(f"Unknown error code {response.status_code} - {response.text}")
 
@@ -372,6 +372,13 @@ class _RemoteRuntime:
     def is_local(self):
         return self.runtime == "local"
 
+    def start_remote(self, session_id, debug, remote_url):
+        self.runtime = "remote"
+        self.instruction_buffer = []
+        self.session_id = session_id
+        self.runner = None
+        self.debug = debug
+        self.remote_url = remote_url
 
 _runtime = _RemoteRuntime()  # internal runtime object
 
@@ -392,13 +399,9 @@ class Remote(object):
         self.remote_url = remote_url
 
     def __enter__(self):
-        _runtime.runtime = "remote"
-        if self.session_id is None:
-            self.session_id = generate_uuid()
-        _runtime.session_id = self.session_id
-        _runtime.debug = self.debug
-        _runtime.remote_url = self.remote_url
-        return _runtime.session_id
+        self.session_id = generate_uuid()
+        _runtime.start_remote(self.session_id, self.debug, self.remote_url)
+        return self.session_id
 
     def __exit__(self, type, value, traceback):
         if not self.keep_alive:

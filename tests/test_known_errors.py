@@ -6,6 +6,11 @@ from olorenchemengine.internal import download_public_file
 
 __author__ = "Oloren AI"
 __copyright__ = "Oloren AI"
+def remote(func):
+    def wrapper(*args, **kwargs):
+        with oce.Remote("http://api.oloren.ai:5000") as remote:
+            func(*args, **kwargs)
+    return wrapper
 
 @pytest.fixture
 def example_data1():
@@ -14,6 +19,7 @@ def example_data1():
     return df
 
 #RuntimeError: Not compiled with CUDA support
+
 def test_TorchGeometric(example_data1):
     data = oce.RandomSplit(split_proportions=[0.8 ,0.0, 0.2]).split(example_data1)
     train, valid, test = data[0], data[1], data[2]
@@ -25,11 +31,13 @@ def test_TorchGeometric(example_data1):
     preds=model.predict(test['Smiles'])
 
 #TypeError: unsupported operand type(s) for +: 'Mol2Vec' and 'DescriptastorusDescriptor'
+
 def test_ConcatMol2Vec():
     oce.DescriptastorusDescriptor('morgan3counts') + oce.Mol2Vec()
     oce.Mol2Vec() + oce.DescriptastorusDescriptor('morgan3counts')
 
 #ValueError: all the input arrays must have same number of dimensions, but the array at index 0 has 2 dimension(s) and the array at index 1 has 1 dimension(s)
+
 def test_ConcatMordred(example_data1):
     rep = oce.DescriptastorusDescriptor('morgan3counts') + oce.MordredDescriptor()
     rep.convert('C')
