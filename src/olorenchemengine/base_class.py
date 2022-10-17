@@ -395,6 +395,9 @@ class BaseModel(BaseClass):
             valid (Tuple[Union[pd.DataFrame, np.ndarray], Union[pd.Series, list, np.ndarray]]): Optional validation data, which can be used as with methods like early stopping and model averaging.
             error_model (BaseErrorModel): Optional error model, which can be used to predict confidence intervals.
         """
+        X_train = np.array(X_train)
+        y_train = np.array(y_train)
+
         X_train_original = X_train
         y_train_original = y_train
 
@@ -498,7 +501,7 @@ class BaseModel(BaseClass):
 
         self.fit(X_train, y_train)
 
-    def _unnormalize(self, Y): 
+    def _unnormalize(self, Y):
         if self.normalization == "zscore" and hasattr(self, "ymean") and hasattr(self, "ystd"):
             result = Y * self.ystd + self.ymean
         elif issubclass(type(self.normalization), BasePreprocessor):
@@ -875,12 +878,12 @@ class MakeMultiClassModel(BaseModel):
         predictions = (predictions.T / predictions.sum(axis=1)).T  # normalizes outputs between 0 and 1
 
         return predictions
-    
+
     def _save(self):
         d = super()._save()
         d.update({"classifiers": [saves(classifier) for classifier in self.classifiers],
                   "sorted_classes": self.sorted_classes})
-    
+
     def _load(self, d):
         super()._load(d)
         self.classifiers = [loads(classifier) for classifier in d["classifiers"]]

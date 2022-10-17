@@ -267,12 +267,7 @@ def generate_uuid():
 
 class _RemoteRuntime:
     def __init__(self) -> None:
-        self.runtime = "local"
-        self.instruction_buffer = []
-        self.session_id = None
-        self.runner = None
-        self.debug = False
-        self.remote_url = None
+        self.reset_remote()
 
     def get_remote_obj(self, remote_id):
         if self.runner is None:
@@ -305,29 +300,21 @@ class _RemoteRuntime:
 
         response = None
 
-        for _ in range(3):
-            response = requests.post(
-                f"{self.remote_url}/firestore/run_remote/",
-                params={
-                    "instructions": json.dumps(self.instruction_buffer),
-                    "uid": oas_connector.authenticate(),
-                    "sid": self.session_id,
-                },
-                headers={
-                    "accept": "application/json",
-                    "content-type": "application/x-www-form-urlencoded",
-                },
-            )
-
-            if response.status_code == 200:
-                break
-            elif response.status_code == 400:
-                import time
-                time.sleep(10) # allow time to recover
-            else:
-                raise ValueError(f"Unknown error code {response.status_code} - {response.text}")
+        response = requests.post(
+            f"{self.remote_url}/firestore/run_remote/",
+            params={
+                "instructions": json.dumps(self.instruction_buffer),
+                "uid": oas_connector.authenticate(),
+                "sid": self.session_id,
+            },
+            headers={
+                "accept": "application/json",
+                "content-type": "application/x-www-form-urlencoded",
+            },
+        )
 
         if response.status_code != 200:
+            self.instruction_buffer = []
             raise ValueError(f"Error code {response.status_code} - {response.text}")
 
         response = response.json()
@@ -355,9 +342,8 @@ class _RemoteRuntime:
             print(f"Remote Call: {self.instruction_buffer}\nResulted in Traceback:")
             print(execution["traceback"])
             oas_connector.logging_db.collection("executions").document(eid).delete()
-            import sys
-
-            sys.exit(0)
+            self.instruction_buffer = []
+            raise ValueError("Remote call resulted in error")
 
         elif execution["status"] == "Finished":
             if len(execution["stdout"].strip()) > 0:
@@ -379,6 +365,14 @@ class _RemoteRuntime:
         self.runner = None
         self.debug = debug
         self.remote_url = remote_url
+
+    def reset_remote(self):
+        self.runtime = "local"
+        self.instruction_buffer = []
+        self.session_id = None
+        self.runner = None
+        self.debug = False
+        self.remote_url = None
 
 _runtime = _RemoteRuntime()  # internal runtime object
 
@@ -404,6 +398,7 @@ class Remote(object):
         return self.session_id
 
     def __exit__(self, type, value, traceback):
+        _runtime.reset_remote()
         if not self.keep_alive:
             import google
 
