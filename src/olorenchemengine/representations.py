@@ -494,9 +494,31 @@ class BaseVecRepresentation(BaseRepresentation):
         )
         return output
 
-    def calculate_similarity(
-        self, x1: Union[str, List[str]], x2: Union[str, List[str]], metric: str = "cosine", **kwargs
-    ) -> np.ndarray:
+    def calculate_distance(self, x1: Union[str, List[str]], x2: Union[str, List[str]],
+        metric: str = "cosine", **kwargs) -> np.ndarray:
+        """ Calculates the distance between two molecules or list of molecules.
+
+        Returns a 2D array of distances between each pair of molecules of shape
+        len(x1) by len(x2).
+
+        This uses pairwise_distances from sklearn.metrics to calculate distances
+        between the vector representations of the molecules. Options for distances
+        are Valid values for metric are:
+
+            From scikit-learn: [‘cityblock’, ‘cosine’, ‘euclidean’, ‘l1’, ‘l2’,
+                ‘manhattan’]. These metrics support sparse matrix inputs.
+                [‘nan_euclidean’] but it does not yet support sparse matrices.
+            From scipy.spatial.distance: [‘braycurtis’, ‘canberra’, ‘chebyshev’,
+                ‘correlation’, ‘dice’, ‘hamming’, ‘jaccard’, ‘kulsinski’,
+                ‘mahalanobis’, ‘minkowski’, ‘rogerstanimoto’, ‘russellrao’,
+                ‘seuclidean’, ‘sokalmichener’, ‘sokalsneath’, ‘sqeuclidean’,
+                ‘yule’].
+
+            See the documentation for scipy.spatial.distance for details on these metrics.
+        """
+
+        from sklearn.metrics import pairwise_distances
+
         if isinstance(x1, str):
             x1 = [x1]
         if isinstance(x2, str):
@@ -504,8 +526,6 @@ class BaseVecRepresentation(BaseRepresentation):
         x1 = self.convert(x1)
         x2 = self.convert(x2)
         return pairwise_distances(x1, x2, metric=metric, **kwargs)
-
-        return
 
     def __add__(self, other):
         """Adds two representations together
@@ -1469,15 +1489,25 @@ class ModelAsRep(BaseCompoundVecRepresentation):
     with ModelAsRep as a representation for property A.
 
     Parameters:
-        model (BaseModel): A trained model to be used as the representation
+        model (BaseModel, str): A trained model to be used as the representation,
+            either a BaseModel object or a path to a saved model
+        download_public_file (bool, optional): If True, will download the specified
+            model from OCE's public warehouse of models. Defaults to False.
         name (str): Name of the property the passed model predicts, which
             is usefully for clear save files/interpretability visualizations.
              Optional.
     """
 
     @log_arguments
-    def __init__(self, model: BaseModel, name="ModelAsRep", log=True, **kwargs):
-        self.model = model
+    def __init__(self, model: Union[BaseModel, str], name="ModelAsRep",
+            download_public_file = False, log=True, **kwargs):
+        if isinstance(model, str):
+            if download_public_file:
+                self.model = oce.load(oce.download_public_file(model))
+            else:
+                self.model = oce.load(model)
+        else:
+            self.model = model
         super().__init__(log=False, names=[name], **kwargs)
 
     def _convert(self, smiles, y=None):
