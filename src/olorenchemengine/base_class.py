@@ -402,7 +402,6 @@ class BaseModel(BaseClass):
             valid (Tuple[Union[pd.DataFrame, np.ndarray], Union[pd.Series, list, np.ndarray]]): Optional validation data, which can be used as with methods like early stopping and model averaging.
             error_model (BaseErrorModel): Optional error model, which can be used to predict confidence intervals.
         """
-        X_train = np.array(X_train)
         y_train = np.array(y_train)
 
         X_train_original = X_train
