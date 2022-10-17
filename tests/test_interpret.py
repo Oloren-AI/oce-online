@@ -17,6 +17,7 @@ def remote(func):
             func(*args, **kwargs)
     return wrapper
 
+
 def test_swap_mutations():
     s = "CC1([C@@H](N2[C@H](S1)[C@@H](C2=O)NC(=O)Cc3ccccc3)C(=O)O)C"
     sm = SwapMutations(radius=1)

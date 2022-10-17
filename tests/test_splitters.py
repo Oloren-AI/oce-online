@@ -35,6 +35,7 @@ def example_data3():
     return df
 
 
+
 def test_run_random(example_data3):
     splitter = oce.RandomSplit(split_proportions=[0.8, 0.1, 0.1])
     for i in splitter.split(example_data3):
@@ -49,11 +50,13 @@ Test fails with split_proportions = [0.8, 0.1, 0.1]: "ValueError: The test_size 
 Test fails with split_proportions = [0.8, 0.2, 0.0]: "ValueError: train_size=1.0 should be either positive and smaller than the number of samples 10 or a float in the (0, 1) range"
 '''
 
+
 def test_run_stratified(example_data3):
     splitter = oce.StratifiedSplitter(split_proportions=[0.8, 0.1, 0.1], value_col='pChEMBL Value')
     for i in splitter.split(example_data3):
         assert(isinstance(i, pd.DataFrame))
         assert(len(i) > 0)
+
 
 
 def test_run_scaffold(example_data3):
@@ -66,6 +69,7 @@ def test_run_scaffold(example_data3):
     for i in splitter.split(example_data3):
         assert(isinstance(i, pd.DataFrame))
         assert(len(i) > 0)
+
 
 
 def test_run_property(example_data1):
@@ -88,10 +92,12 @@ def test_run_property(example_data1):
  - Test case with empty validation split (TT/train test split)
 '''
 
+
 def test_split_props_random(example_data3):
     split_proportions = [0.8, 0.1, 0.1]
 
     splitter = oce.RandomSplit(split_proportions=split_proportions)
+    print(example_data3)
     split = splitter.split(example_data3)
     total_samples = len(example_data3)
 
@@ -115,6 +121,7 @@ def test_split_props_random(example_data3):
 Test won't show this as there is still the run error from the first test case [0.8, 0.1, 0.1], described in test_run_stratified.
 '''
 
+
 def test_split_props_stratified(example_data3):
     split_proportions = [0.8, 0.1, 0.1]
 
@@ -137,6 +144,7 @@ def test_split_props_stratified(example_data3):
             assert(actual_split_prop == 0)
         else:
             assert(abs(actual_split_prop - split_proportions_TT[i]) < 0.05)
+
 
 
 def test_split_props_scaffold_murcko(example_data3):
@@ -163,6 +171,7 @@ def test_split_props_scaffold_murcko(example_data3):
             assert(abs(actual_split_prop - split_proportions_TT[i]) < 0.05)
 
 
+
 def test_split_props_scaffold_kmeans_murcko(example_data3):
     split_proportions = [0.33, 0.33, 0.33]
 
@@ -185,6 +194,7 @@ def test_split_props_scaffold_kmeans_murcko(example_data3):
             assert(actual_split_prop == 0)
         else:
             assert(abs(actual_split_prop - split_proportions_TT[i]) < 0.1)
+
 
 
 def test_split_props_property(example_data1):
@@ -212,6 +222,7 @@ def test_split_props_property(example_data1):
 
 
 
+
 def test_split_props_property_thresh(example_data1):
     splitter = oce.PropertySplit(property_col='pChEMBL Value', threshold=7, noise=0.1, categorical=False)
     split = splitter.split(example_data1)
@@ -224,6 +235,7 @@ def test_split_props_property_thresh(example_data1):
 
 '''Check if saved and loaded splitter parameters equal the true parameters before save/load.
 '''
+
 
 def test_save_load(example_data1, example_data3, tmp_path):
     d = tmp_path / "sub"

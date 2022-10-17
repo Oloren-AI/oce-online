@@ -20,6 +20,7 @@ def example_data1():
 
 #RuntimeError: Not compiled with CUDA support
 
+
 def test_TorchGeometric(example_data1):
     data = oce.RandomSplit(split_proportions=[0.8 ,0.0, 0.2]).split(example_data1)
     train, valid, test = data[0], data[1], data[2]
@@ -32,11 +33,13 @@ def test_TorchGeometric(example_data1):
 
 #TypeError: unsupported operand type(s) for +: 'Mol2Vec' and 'DescriptastorusDescriptor'
 
+
 def test_ConcatMol2Vec():
     oce.DescriptastorusDescriptor('morgan3counts') + oce.Mol2Vec()
     oce.Mol2Vec() + oce.DescriptastorusDescriptor('morgan3counts')
 
 #ValueError: all the input arrays must have same number of dimensions, but the array at index 0 has 2 dimension(s) and the array at index 1 has 1 dimension(s)
+
 
 def test_ConcatMordred(example_data1):
     rep = oce.DescriptastorusDescriptor('morgan3counts') + oce.MordredDescriptor()
