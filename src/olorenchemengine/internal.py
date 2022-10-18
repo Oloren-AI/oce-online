@@ -277,7 +277,9 @@ class _RemoteRuntime:
 
     def add_instruction(self, instruction):
         self.instruction_buffer.append(instruction)
-        if instruction["type"] == "CALL":
+
+
+        if instruction["type"] == "CALL" or len(json.dumps(self.instruction_buffer)) > 30000:
             x = self.send_instructions_blocking()
             if x is not None and isinstance(x, str):
                 return json.loads(x)
