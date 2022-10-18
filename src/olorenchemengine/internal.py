@@ -10,7 +10,6 @@ import os
 import pickle
 from abc import ABC, abstractmethod
 from typing import Callable, Union
-import gcsfs
 import subprocess
 import pyrebase  # Default pyrebase is pyrebase3 which won't work. Need to install pyrebase4 (pip install pyrebase4)
 from google.cloud.firestore import Client
@@ -187,11 +186,8 @@ def download_public_file(path, redownload=False):
         os.makedirs(os.path.dirname(local_path))
 
     print(f"Downloading {path}...")
-    fs = gcsfs.GCSFileSystem()
-    with fs.open(f"gs://oloren-public-data/{path}", "rb") as f:
-        with open(local_path, "wb") as out:
-            out.write(f.read())
-
+    import urllib.request
+    urllib.request.urlretrieve(f"https://storage.googleapis.com/oloren-public-data/{path}", local_path)
     return local_path
 
 
