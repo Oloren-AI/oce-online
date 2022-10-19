@@ -474,7 +474,7 @@ class BaseBoosting(BaseModel):
                 model.fit(X_train, y_train)
                 y_pred = np.array(model.predict(X_train)).flatten()
             y_train = y_train - y_pred
-    
+
     def _error_calc(self, residuals):
         initial_residual, other_residuals = residuals[0], residuals[1:]
         y = np.array(([initial_residual]))
@@ -482,38 +482,38 @@ class BaseBoosting(BaseModel):
             curr_residual = other_residuals[index]
             total_residual = y[-1] - curr_residual
             y = np.append(y, [total_residual], axis = 0)
-        
+
         stdevs = list(np.std(y, axis = 1))
         return stdevs
 
     def _waterfall(self, y_data = None, normalize = False):
         self.stdevs = self._error_calc(self.residuals)
-        if y_data is not None: 
+        if y_data is not None:
             naive_mean = np.average(y_data)
             naive_residuals = [(y - naive_mean)/np.std(y_data) for y in y_data] #normalized so they're in the same format as predict's input
-            if normalize:    
-                naive_residuals = naive_residuals 
-            else: 
+            if normalize:
+                naive_residuals = naive_residuals
+            else:
                 naive_residuals = self._unnormalize(np.array(naive_residuals))
             self.residuals.insert(0, naive_residuals)
-            self.stdevs.insert(0, np.std(naive_residuals))  
+            self.stdevs.insert(0, np.std(naive_residuals))
         return self.stdevs
 
     def _predict(self, X, waterfall = False, normalize = False):
-        if waterfall: 
-            self.residuals = [] 
+        if waterfall:
+            self.residuals = []
         y = np.zeros((len(X)))
         for model in self.models:
             prediction = np.array(model.predict(X)).flatten()
             y = y + prediction
             if waterfall:
-                if normalize: 
+                if normalize:
                     self.residuals.append(prediction)
                 else:
                     self.residuals.append(self._unnormalize(prediction))
         if self.setting == "classification":
             y = np.clip(y, 0, 1)
-            if waterfall: 
+            if waterfall:
                 self.residuals = [np.clip(residual, 0, 1) for residual in self.residuals]
         return y.flatten()
 
@@ -736,9 +736,11 @@ class ResampleAdaboost(BaseBoosting):
 
     def _save(self):
         d = super()._save()
+        if not hasattr(self, "betas"): return d
         d.update({"betas": self.betas})
         return d
 
     def _load(self, d):
         super()._load(d)
-        self.betas = d["betas"]
+        if "betas" in d:
+            self.betas = d["betas"]
