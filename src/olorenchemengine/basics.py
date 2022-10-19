@@ -1,25 +1,23 @@
 """ Machine learning algorithms for use with molecular vector representations and features from experimental data.
 """
 
-from tempfile import NamedTemporaryFile
-import joblib
 import io
+import json
+from tempfile import NamedTemporaryFile
+
+import joblib
+import numpy as np
+import pandas as pd
+import scipy
+from pandas.api.types import is_numeric_dtype
+from rdkit import Chem
 from sklearn.model_selection import RandomizedSearchCV
 
 import olorenchemengine as oce
-from olorenchemengine.representations import (
-    BaseCompoundVecRepresentation,
-    BaseVecRepresentation,
-)
+from olorenchemengine.representations import (BaseCompoundVecRepresentation,
+                                              BaseVecRepresentation)
+
 from .base_class import *
-from rdkit import Chem
-
-import pandas as pd
-import numpy as np
-import scipy
-import json
-
-from pandas.api.types import is_numeric_dtype
 
 try:
     from pytorch_lightning import LightningModule
@@ -86,9 +84,9 @@ class SVC(BaseEstimator):
 
     @log_arguments
     def __init__(self, *args, **kwargs):
-        from sklearn.svm import SVC
         from sklearn.pipeline import make_pipeline
         from sklearn.preprocessing import StandardScaler
+        from sklearn.svm import SVC
 
         self.obj = make_pipeline(StandardScaler(), SVC(*args, **kwargs))
 
@@ -99,9 +97,9 @@ class SVR(BaseEstimator):
 
     @log_arguments
     def __init__(self, *args, **kwargs):
-        from sklearn.svm import SVR
         from sklearn.pipeline import make_pipeline
         from sklearn.preprocessing import StandardScaler
+        from sklearn.svm import SVR
 
         self.obj = make_pipeline(StandardScaler(), SVR(*args, **kwargs))
 
@@ -112,9 +110,10 @@ class KBestLinearRegression(BaseEstimator):
 
     @log_arguments
     def __init__(self, k=1, *args, **lwargs):
-        from sklearn.pipeline import Pipeline
+        from sklearn.feature_selection import (SelectKBest,
+                                               mutual_info_regression)
         from sklearn.linear_model import LinearRegression
-        from sklearn.feature_selection import SelectKBest, mutual_info_regression
+        from sklearn.pipeline import Pipeline
 
         self.obj = Pipeline(
             [
@@ -221,7 +220,8 @@ class AutoRandomForestModel(BaseSKLearnModel, BaseObject):
     def __init__(
         self, representation, n_iter=100, scoring=None, verbose=2, cv=5, **kwargs
     ):
-        from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+        from sklearn.ensemble import (RandomForestClassifier,
+                                      RandomForestRegressor)
 
         regressor = self.autofit(RandomForestRegressor(), n_iter, cv, scoring, verbose)
         classifier = self.autofit(
@@ -354,9 +354,8 @@ class SklearnMLP(BaseSKLearnModel):
 
 
 import pytorch_lightning as pl
-
-import torch.nn as nn
 import torch
+import torch.nn as nn
 
 
 class plMLP(pl.LightningModule):
@@ -468,7 +467,7 @@ class TorchMLP(BaseModel):
             setting=self.setting,
         )
 
-        from torch.utils.data import TensorDataset, DataLoader
+        from torch.utils.data import DataLoader, TensorDataset
 
         y = np.array(y.tolist())
         device = torch.device(oce.CONFIG["MAP_LOCATION"])
@@ -553,7 +552,7 @@ class XGBoostModel(BaseSKLearnModel, BaseObject):
         colsample_bytree=0.8,
         **kwargs
     ):
-        from xgboost import XGBRegressor, XGBClassifier
+        from xgboost import XGBClassifier, XGBRegressor
 
         regressor = XGBRegressor(
             tree_method="gpu_hist",
@@ -602,7 +601,7 @@ class ZWK_XGBoostModel(BaseSKLearnModel, BaseObject):
     def __init__(
         self, representation, n_iter=100, scoring=None, verbose=2, cv=5, **kwargs
     ):
-        from xgboost import XGBRegressor, XGBClassifier
+        from xgboost import XGBClassifier, XGBRegressor
 
         if scoring == "spearman":
             from scipy.stats import spearmanr
@@ -1000,7 +999,8 @@ class FeaturesClassification(BaseModel):
         """
         self.numeric_cols = []
         if config == "lineardiscriminant":
-            from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+            from sklearn.discriminant_analysis import \
+                LinearDiscriminantAnalysis
 
             self.obj = LinearDiscriminantAnalysis()
         elif config == "gaussiannb":
@@ -1008,7 +1008,8 @@ class FeaturesClassification(BaseModel):
 
             self.obj = GaussianNB()
         elif config == "quadraticdiscriminant":
-            from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+            from sklearn.discriminant_analysis import \
+                QuadraticDiscriminantAnalysis
 
             self.obj = QuadraticDiscriminantAnalysis()
         elif config == "knearestneighbors":

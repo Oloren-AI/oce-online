@@ -5,12 +5,12 @@ visualizations, or model selections.
 """
 
 from olorenchemengine.base_class import *
-from olorenchemengine.representations import *
 from olorenchemengine.dataset import *
-from olorenchemengine.uncertainty import *
-from olorenchemengine.interpret import *
 from olorenchemengine.internal import *
+from olorenchemengine.interpret import *
 from olorenchemengine.manager import *
+from olorenchemengine.representations import *
+from olorenchemengine.uncertainty import *
 from olorenchemengine.visualizations import *
 
 

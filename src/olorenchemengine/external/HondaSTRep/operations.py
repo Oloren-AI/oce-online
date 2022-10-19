@@ -29,6 +29,7 @@ Footer
 import argparse
 import pickle
 from collections import Counter
+
 import olorenchemengine as oce
 from olorenchemengine.internal import mock_imports
 
@@ -198,19 +199,16 @@ class WordVocab(Vocab):
             return pickle.load(f)
 
 
+import math
+
 import numpy as np
 import pandas as pd
-
 import torch
-from torch import nn
-from torch import optim
+from torch import nn, optim
 from torch.autograd import Variable
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
-
-
 from tqdm import tqdm
-import math
 
 PAD = 0
 UNK = 1

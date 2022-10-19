@@ -1,13 +1,14 @@
 import contextlib
-from locale import D_FMT
 import sys
-import contextlib
+from locale import D_FMT
 
 if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
-    from importlib.metadata import PackageNotFoundError, version  # pragma: no cover
+    from importlib.metadata import (PackageNotFoundError,  # pragma: no cover
+                                    version)
 else:
-    from importlib_metadata import PackageNotFoundError, version  # pragma: no cover
+    from importlib_metadata import (PackageNotFoundError,  # pragma: no cover
+                                    version)
 
 try:
     # Change here if project is renamed and does not equal the package name
@@ -95,10 +96,9 @@ if not path.exists(path.join(path.expanduser("~"), f".oce/cache/")):
 if not path.exists(path.join(path.expanduser("~"), f".oce/cache/vecrep/")):
     os.mkdir(path.join(path.expanduser("~"), f".oce/cache/vecrep/"))
 
-import pandas as pd
-
 import json
 
+import pandas as pd
 
 CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".oce/CONFIG.json")
 if os.path.exists(CONFIG_PATH):
@@ -167,21 +167,21 @@ def ExampleDataFrame():
     )
 
 
-from .internal import *
 from .base_class import *
 from .basics import *
-from .ensemble import *
-from .gnn import *
-from .representations import *
-from .external import *
-from .splitters import *
+from .benchmarks import *
 from .dataset import *
+from .ensemble import *
+from .external import *
+from .gnn import *
+from .hyperparameters import *
+from .internal import *
 from .interpret import *
 from .manager import *
-from .visualizations import *
+from .representations import *
+from .splitters import *
 from .uncertainty import *
-from .benchmarks import *
-from .hyperparameters import *
+from .visualizations import *
 
 
 def ExampleDataset():

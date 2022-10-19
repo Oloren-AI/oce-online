@@ -5,13 +5,11 @@ The original library has been adapted to be incorporated into Oloren ChemEngine
 For more information visit the github repository: https://github.com/EBjerrum/pICalculax
 """
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from numpy import unique, argmin
 from numpy import abs as np_abs
-
+from numpy import argmin, unique
 # RuleTables
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 # Format of ruletable tuple (Name, SMARTS, pKa (evt. as list), type (evt.as list) )
 # Type is 0 = acidic (charge below pKa)
@@ -579,9 +577,10 @@ def pI(pkalist, chargelist):
     return pI
 
 
-from olorenchemengine.representations import BaseCompoundVecRepresentation
 import numpy as np
+
 from olorenchemengine.base_class import log_arguments
+from olorenchemengine.representations import BaseCompoundVecRepresentation
 
 
 class calc_pI(BaseCompoundVecRepresentation):

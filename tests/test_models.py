@@ -1,14 +1,15 @@
-import pytest
-import olorenchemengine as oce
 import numpy as np
+import pandas as pd
+import pytest
+from sklearn.model_selection import train_test_split
+
+import olorenchemengine as oce
 from olorenchemengine.base_class import *
 from olorenchemengine.basics import *
-from olorenchemengine.representations import *
-from olorenchemengine.ensemble import *
 from olorenchemengine.benchmarks import *
-import pandas as pd
+from olorenchemengine.ensemble import *
 from olorenchemengine.internal import download_public_file
-from sklearn.model_selection import train_test_split
+from olorenchemengine.representations import *
 
 __author__ = "Oloren AI"
 __copyright__ = "Oloren AI"

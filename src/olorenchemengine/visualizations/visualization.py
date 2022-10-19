@@ -1,26 +1,24 @@
+import dataclasses
+import os
+import urllib.parse
 from cmath import e
 from dataclasses import dataclass
-import dataclasses
 from lib2to3.pgen2.literals import simple_escapes
-import os
 from re import escape
-import urllib.parse
 
 from IPython.display import IFrame
 from pandas.core.indexes.accessors import NoNewAttributesMixin
-
+from rdkit import Chem
+from rdkit.Chem import Draw
 from sklearn.model_selection import PredefinedSplit
 
 from olorenchemengine.base_class import *
-from olorenchemengine.representations import *
 from olorenchemengine.dataset import *
-from olorenchemengine.uncertainty import *
-from olorenchemengine.interpret import *
-from olorenchemengine.internal import *
 from olorenchemengine.ensemble import *
-
-from rdkit import Chem
-from rdkit.Chem import Draw
+from olorenchemengine.internal import *
+from olorenchemengine.interpret import *
+from olorenchemengine.representations import *
+from olorenchemengine.uncertainty import *
 
 
 def get_oas_compatible_visualizations():
@@ -1473,8 +1471,8 @@ class VisualizeModelSim(CompoundScatterPlot):
         self.dataset = dataset
         self.model = model
 
-        from rdkit.Chem import AllChem
         from rdkit import DataStructs
+        from rdkit.Chem import AllChem
 
         fingerprinter = lambda s: AllChem.GetMorganFingerprint(Chem.MolFromSmiles(s), 4)
         train_fps = [
@@ -1698,8 +1696,8 @@ class VisualizeModelSim2(CompoundScatterPlot):
         self.dataset = dataset
         self.model = model
 
-        from rdkit.Chem import AllChem
         from rdkit import DataStructs
+        from rdkit.Chem import AllChem
 
         fingerprinter = lambda s: AllChem.GetMorganFingerprint(Chem.MolFromSmiles(s), 4)
         train_fps = [

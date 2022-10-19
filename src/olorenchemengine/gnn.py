@@ -1,13 +1,12 @@
 """ Building blocks for graph neural networks.
 """
 
-from .base_class import *
-from .representations import BaseRepresentation, TorchGeometricGraph
-
-
 import torch
 import torch.nn as nn
 from pytorch_lightning import LightningModule
+
+from .base_class import *
+from .representations import BaseRepresentation, TorchGeometricGraph
 
 if isinstance(LightningModule, MagicMock):
     lm_imports = (BaseClass,)

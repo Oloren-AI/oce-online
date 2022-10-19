@@ -1,16 +1,17 @@
+from typing import Any, List, Union
+
 import numpy as np
 import pandas as pd
-
-from typing import List, Union, Any
+import torch
+from torch.utils.data import DataLoader
 
 import olorenchemengine as oce
-from olorenchemengine.base_class import log_arguments, BaseModel
-from olorenchemengine.representations import BaseVecRepresentation, SMILESRepresentation
+from olorenchemengine.base_class import BaseModel, log_arguments
 from olorenchemengine.internal import download_public_file
-from .operations import WordVocab, TrfmSeq2seq, Seq2seqDataset
+from olorenchemengine.representations import (BaseVecRepresentation,
+                                              SMILESRepresentation)
 
-from torch.utils.data import DataLoader
-import torch
+from .operations import Seq2seqDataset, TrfmSeq2seq, WordVocab
 
 
 class HondaSTRep(BaseVecRepresentation):

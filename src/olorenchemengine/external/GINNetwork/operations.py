@@ -1,16 +1,14 @@
-from olorenchemengine.internal import mock_imports
+from copy import copy
 
 import torch
 from torch import nn as nn
 from torch.nn import functional as F
-
-from torch_geometric.nn import MessagePassing
 from torch_geometric import nn as nng
-from torch_sparse import SparseTensor, coalesce
+from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter_add
+from torch_sparse import SparseTensor, coalesce
 
-
-from copy import copy
+from olorenchemengine.internal import mock_imports
 
 
 class MLP(nn.Module):
@@ -34,7 +32,7 @@ class MLP(nn.Module):
 class OGBMolEmbedding(nn.Module):
     def __init__(self, dim, embed_edge=True, x_as_list=False):
         super().__init__()
-        from ogb.graphproppred.mol_encoder import BondEncoder, AtomEncoder
+        from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
 
         self.atom_embedding = AtomEncoder(emb_dim=dim)
         if embed_edge:
@@ -181,11 +179,8 @@ class GlobalPool(nn.Module):
     def __init__(self, fun, cat_size=False, cat_candidates=False):
         super().__init__()
         self.cat_size = cat_size
-        from torch_geometric.nn import (
-            global_add_pool,
-            global_mean_pool,
-            global_max_pool,
-        )
+        from torch_geometric.nn import (global_add_pool, global_max_pool,
+                                        global_mean_pool)
 
         if fun.lower() == "add":
             self.fun = global_add_pool
@@ -198,11 +193,8 @@ class GlobalPool(nn.Module):
     def forward(self, batch):
         x, b = batch.x, batch.batch
         pooled = self.fun(x, b, size=batch.num_graphs)
-        from torch_geometric.nn import (
-            global_add_pool,
-            global_mean_pool,
-            global_max_pool,
-        )
+        from torch_geometric.nn import (global_add_pool, global_max_pool,
+                                        global_mean_pool)
 
         if self.cat_size:
             sizes = global_add_pool(
@@ -233,7 +225,7 @@ class GINNetwork(nn.Module):
         super().__init__()
         self.k = k
         self.conv_type = conv_type
-        from ogb.graphproppred.mol_encoder import BondEncoder, AtomEncoder
+        from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
 
         convs = [
             ConvBlock(

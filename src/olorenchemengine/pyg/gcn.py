@@ -1,16 +1,10 @@
 import torch
 import torch.nn.functional as F
 from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
-
 ### GIN convolution along the graph structure
-from torch_geometric.nn import (
-    GlobalAttention,
-    MessagePassing,
-    Set2Set,
-    global_add_pool,
-    global_max_pool,
-    global_mean_pool,
-)
+from torch_geometric.nn import (GlobalAttention, MessagePassing, Set2Set,
+                                global_add_pool, global_max_pool,
+                                global_mean_pool)
 from torch_geometric.utils import degree
 
 

@@ -6,6 +6,7 @@ Wrapping the GIN network family based on:
 """
 from olorenchemengine.base_class import log_arguments
 from olorenchemengine.gnn import BaseLightningModule
+
 from .operations import GINNetwork
 
 

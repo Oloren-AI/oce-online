@@ -1,12 +1,11 @@
-import pytest
-import olorenchemengine as oce
 import numpy as np
-from olorenchemengine.interpret import *
-
 import pandas as pd
+import pytest
+from rdkit import Chem
 from sklearn.model_selection import train_test_split
 
-from rdkit import Chem
+import olorenchemengine as oce
+from olorenchemengine.interpret import *
 
 __author__ = "Oloren AI"
 __copyright__ = "Oloren AI"

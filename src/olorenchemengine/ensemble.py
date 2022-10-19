@@ -1,8 +1,8 @@
 """ Ensembling methods to combine `BaseModel`s to create better, combined models.
 """
 from .base_class import *
-from .representations import *
 from .basics import *
+from .representations import *
 
 
 def get_oof(self, model, X, y, kf):

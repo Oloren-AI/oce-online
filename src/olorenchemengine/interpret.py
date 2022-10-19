@@ -1,23 +1,20 @@
 import copy
 import io
-
 from abc import abstractmethod
-from tqdm import tqdm
 
 import numpy as np
+import PIL
+import selfies as sf
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.DataStructs.cDataStructs import (BulkTanimotoSimilarity,
+                                            TanimotoSimilarity)
+from tqdm import tqdm
 
 from .base_class import *
 from .dataset import *
-from .representations import *
 from .external.stoned import *
-
-import PIL
-
-import selfies as sf
-
-from rdkit.DataStructs.cDataStructs import BulkTanimotoSimilarity, TanimotoSimilarity
-from rdkit import Chem
-from rdkit.Chem import AllChem
+from .representations import *
 
 
 class PerturbationEngine(BaseClass):

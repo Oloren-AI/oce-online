@@ -3,13 +3,13 @@ benchmarks is a standard framework for benchmarking the performance of models,
 and for methods development
 """
 
-import olorenchemengine as oce
-from olorenchemengine import *
-
 from typing import *
+
 import pandas as pd
 from tqdm import tqdm
 
+import olorenchemengine as oce
+from olorenchemengine import *
 from olorenchemengine.base_class import *
 from olorenchemengine.manager import *
 from olorenchemengine.visualizations import *

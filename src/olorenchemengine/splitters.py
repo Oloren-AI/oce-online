@@ -1,14 +1,14 @@
 """ For creating splits on the data"""
 
+import itertools
+import random
 from abc import abstractmethod
 
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import QuantileTransformer
 from rdkit import Chem
 from rdkit.Chem.Scaffolds import MurckoScaffold
-import itertools
-import random
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import QuantileTransformer
 
 from .base_class import *
 from .dataset import *

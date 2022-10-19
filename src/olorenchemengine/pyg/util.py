@@ -1,12 +1,10 @@
 import numpy as np
-from olorenchemengine.internal import mock_imports
-
 import torch
 import torch_geometric.data
-
 from ogb.utils.features import atom_to_feature_vector, bond_to_feature_vector
-
 from rdkit import Chem
+
+from olorenchemengine.internal import mock_imports
 
 
 def molecule_to_graph(mol, include_mol=False):

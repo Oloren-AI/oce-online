@@ -35,14 +35,14 @@ Features - Main Mol2vec Module
 ==============================
 w. PR for gensim 4.0 from tonyreina and samoturk
 """
-from tqdm import tqdm
+import timeit
+
 import numpy as np
 import pandas as pd
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import PandasTools
-import timeit
 from joblib import Parallel, delayed
+from rdkit import Chem
+from rdkit.Chem import AllChem, PandasTools
+from tqdm import tqdm
 
 
 class DfVec(object):

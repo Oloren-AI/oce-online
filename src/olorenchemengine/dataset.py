@@ -1,5 +1,6 @@
-from typing_extensions import Self
 import warnings
+
+from typing_extensions import Self
 
 warnings.filterwarnings("ignore")
 
@@ -201,8 +202,9 @@ class DatasetFromCSV(BaseDataset):
         super().__init__(data=self.data.to_csv(), log=False, **kwargs)
 
 
-import requests
 import io
+
+import requests
 
 
 class DatasetFromCDDSearch(BaseDataset):

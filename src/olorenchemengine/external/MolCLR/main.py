@@ -1,22 +1,17 @@
-import olorenchemengine as oce
-
-from olorenchemengine.base_class import log_arguments, BaseModel
-from olorenchemengine.representations import (
-    AtomFeaturizer,
-    BondFeaturizer,
-    TorchGeometricGraph,
-    SMILESRepresentation,
-    BaseVecRepresentation,
-)
-from olorenchemengine.internal import download_public_file
-
+import numpy as np
 from rdkit import Chem
 from rdkit.Chem.rdchem import BondType as BT
-
 from torch_geometric.data import DataLoader
-
-import numpy as np
 from tqdm import tqdm
+
+import olorenchemengine as oce
+from olorenchemengine.base_class import BaseModel, log_arguments
+from olorenchemengine.internal import download_public_file
+from olorenchemengine.representations import (AtomFeaturizer,
+                                              BaseVecRepresentation,
+                                              BondFeaturizer,
+                                              SMILESRepresentation,
+                                              TorchGeometricGraph)
 
 ATOM_LIST = list(range(1, 119))
 CHIRALITY_LIST = [
@@ -110,15 +105,12 @@ class MolCLR(BaseModel):
     def _fit(self, X, y=None, **kwargs):
 
         import torch
-        from torch import nn
         import torch.nn.functional as F
-        from torch.utils.tensorboard import SummaryWriter
+        from sklearn.metrics import (mean_absolute_error, mean_squared_error,
+                                     roc_auc_score)
+        from torch import nn
         from torch.optim.lr_scheduler import CosineAnnealingLR
-        from sklearn.metrics import (
-            roc_auc_score,
-            mean_squared_error,
-            mean_absolute_error,
-        )
+        from torch.utils.tensorboard import SummaryWriter
 
         if self.setting == "regression":
             self.criterion = nn.MSELoss()
@@ -262,15 +254,12 @@ class MolCLRVecRep(BaseVecRepresentation):
         }
 
         import torch
-        from torch import nn
         import torch.nn.functional as F
-        from torch.utils.tensorboard import SummaryWriter
+        from sklearn.metrics import (mean_absolute_error, mean_squared_error,
+                                     roc_auc_score)
+        from torch import nn
         from torch.optim.lr_scheduler import CosineAnnealingLR
-        from sklearn.metrics import (
-            roc_auc_score,
-            mean_squared_error,
-            mean_absolute_error,
-        )
+        from torch.utils.tensorboard import SummaryWriter
 
         if self.model_type == "ginet":
             from .model import GINet

@@ -2,29 +2,22 @@
 """
 from __future__ import annotations
 
-import os
-from abc import abstractmethod
-from typing import Any, Callable, Tuple, Union
-import pandas as pd
-import numpy as np
 import inspect
 import io
+import logging
+import os
 import sys
+from abc import abstractmethod
+from typing import Any, Callable, Tuple, Union
+
+import numpy as np
+import pandas as pd
+from sklearn.metrics import (average_precision_score, explained_variance_score,
+                             max_error, mean_absolute_error,
+                             mean_squared_error, r2_score, roc_auc_score)
 
 import olorenchemengine as oce
 from olorenchemengine.internal import *
-
-import logging
-
-from sklearn.metrics import (
-    average_precision_score,
-    roc_auc_score,
-    r2_score,
-    explained_variance_score,
-    max_error,
-    mean_absolute_error,
-    mean_squared_error,
-)
 
 # List of metrics that can be used for evaluating classification models
 classification_metrics = {
@@ -379,6 +372,7 @@ class BaseModel(BaseClass):
 
     def visualize_parameters_ipynb(self):
         from urllib.parse import quote
+
         from IPython.display import IFrame, display
 
         parameters = parameterize(self)
@@ -603,9 +597,8 @@ class BaseModel(BaseClass):
                 if return_ci:
                     result["ci"] = errors
                 if return_vis:
-                    from olorenchemengine.visualizations.visualization import (
-                        VisualizeError,
-                    )
+                    from olorenchemengine.visualizations.visualization import \
+                        VisualizeError
 
                     ci = self.error_model.quantile
                     result["vis"] = [
@@ -676,8 +669,8 @@ class BaseModel(BaseClass):
             elif self.setting == "classification":
                 scoring = "Average Precision"
 
-        from sklearn.model_selection import KFold
         from sklearn.calibration import calibration_curve
+        from sklearn.model_selection import KFold
 
         kf = KFold(n_splits=n_splits)
 
@@ -761,8 +754,9 @@ class BaseModel(BaseClass):
             self.error_model.fit(X, y)
             self.em_status = "fitted"
 
-        import joblib
         import json
+
+        import joblib
 
         dataset_hash = joblib.hash(X) + joblib.hash(y)
 

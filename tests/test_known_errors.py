@@ -1,7 +1,8 @@
-import pytest
-import olorenchemengine as oce
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
+
+import olorenchemengine as oce
 from olorenchemengine.internal import download_public_file
 
 __author__ = "Oloren AI"

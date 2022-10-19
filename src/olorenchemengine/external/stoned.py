@@ -207,14 +207,11 @@
 #   3. Added condition to sanitize SMILES
 
 import numpy as np
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.DataStructs.cDataStructs import TanimotoSimilarity
-from rdkit.Chem import Mol
+from rdkit import Chem, RDLogger
+from rdkit.Chem import AllChem, Mol
 from rdkit.Chem.AtomPairs.Sheridan import GetBPFingerprint, GetBTFingerprint
 from rdkit.Chem.Pharm2D import Generate, Gobbi_Pharm2D
-
-from rdkit import RDLogger
+from rdkit.DataStructs.cDataStructs import TanimotoSimilarity
 
 import olorenchemengine as oce
 

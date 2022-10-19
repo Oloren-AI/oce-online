@@ -2,13 +2,12 @@
 """
 
 from abc import abstractmethod, abstractproperty
+from typing import Any, List, Union
 
 import numpy as np
-from tqdm import tqdm
 from pandas.api.types import is_numeric_dtype
 from rdkit import Chem
-
-from typing import List, Union, Any
+from tqdm import tqdm
 
 import olorenchemengine as oce
 
@@ -339,8 +338,8 @@ class TorchGeometricGraph(BaseRepresentation):
         return (self.atom_featurizer.length, self.bond_featurizer.length)
 
     def _convert(self, smiles, y=None, addHs=False, **kwargs):
+        from torch import Tensor, from_numpy
         from torch_geometric.data import Data
-        from torch import from_numpy, Tensor
 
         data = Data()
 
@@ -836,7 +835,8 @@ class DescriptastorusDescriptor(BaseCompoundVecRepresentation):
     def __init__(self, name, *args, log=True, scale=None, **kwargs):
         self.name = name
 
-        from descriptastorus.descriptors.DescriptorGenerator import MakeGenerator
+        from descriptastorus.descriptors.DescriptorGenerator import \
+            MakeGenerator
 
         self.generator = MakeGenerator((name,))
         super().__init__(log=False, scale=scale, **kwargs)
@@ -1112,6 +1112,7 @@ class FragmentIndicator(BaseCompoundVecRepresentation):
 
 
 from rdkit.Chem import Descriptors, rdMolDescriptors
+
 from .external import calc_pI
 
 
@@ -1309,11 +1310,9 @@ class GobbiPharma3D(BaseCompoundVecRepresentation):
 from collections import OrderedDict
 
 import torch
-
 import torch_geometric.data
-from torch_geometric.data import DataLoader as PyGDataLoader
-
 from rdkit import Chem
+from torch_geometric.data import DataLoader as PyGDataLoader
 
 
 class OlorenCheckpoint(BaseCompoundVecRepresentation):
@@ -1426,7 +1425,8 @@ class OlorenCheckpoint(BaseCompoundVecRepresentation):
         if not isinstance(mol, Chem.Mol):
             mol = Chem.MolFromSmiles(mol)
 
-        from ogb.utils.features import atom_to_feature_vector, bond_to_feature_vector
+        from ogb.utils.features import (atom_to_feature_vector,
+                                        bond_to_feature_vector)
 
         # Generate nodes of the graph
         atom_features_list = []
@@ -1529,8 +1529,8 @@ class MCSClusterRep(BaseCompoundVecRepresentation):
         **kwargs,
     ):
         if not self.kwargs["cached"]:
-            from rdkit.Chem import AllChem
             from rdkit import DataStructs
+            from rdkit.Chem import AllChem
 
             if eval_set == "train":
                 eval_set = dataset.data[dataset.data["split"] == "train"]
@@ -1552,8 +1552,8 @@ class MCSClusterRep(BaseCompoundVecRepresentation):
                 ]
             )
 
-            from sklearn.cluster import AgglomerativeClustering
             from rdkit.Chem.rdFMCS import FindMCS
+            from sklearn.cluster import AgglomerativeClustering
 
             clustering = AgglomerativeClustering(
                 n_clusters=None,

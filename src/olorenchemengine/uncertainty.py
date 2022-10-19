@@ -1,21 +1,21 @@
 from cmath import exp
 from tkinter import N
-import olorenchemengine as oce
 
-from .base_class import *
-from .representations import *
-from .dataset import *
-from .basics import *
-
-import pandas as pd
 import numpy as np
-
+import pandas as pd
+from rdkit.Chem import AllChem
+from rdkit.DataStructs.cDataStructs import BulkTanimotoSimilarity
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import OneHotEncoder
-from rdkit.DataStructs.cDataStructs import BulkTanimotoSimilarity
-from rdkit.Chem import AllChem
+
+import olorenchemengine as oce
+
+from .base_class import *
+from .basics import *
+from .dataset import *
+from .representations import *
 
 
 class BaseFingerprintModel(BaseErrorModel):

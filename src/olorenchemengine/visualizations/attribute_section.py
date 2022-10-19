@@ -7,11 +7,11 @@ import os
 from abc import ABC, abstractmethod
 
 from olorenchemengine.base_class import *
-from olorenchemengine.representations import *
 from olorenchemengine.dataset import *
-from olorenchemengine.uncertainty import *
-from olorenchemengine.interpret import *
 from olorenchemengine.internal import *
+from olorenchemengine.interpret import *
+from olorenchemengine.representations import *
+from olorenchemengine.uncertainty import *
 
 
 class BaseAttribute(ABC):

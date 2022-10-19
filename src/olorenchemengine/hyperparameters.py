@@ -14,12 +14,12 @@ https://github.com/hyperopt/hyperopt/wiki/FMin.
 from abc import abstractproperty
 from typing import *
 
-from .base_class import *
-from .manager import *
-from .benchmarks import *
-
-from hyperopt import hp, fmin, tpe, hp
+from hyperopt import fmin, hp, tpe
 from hyperopt.pyll import scope
+
+from .base_class import *
+from .benchmarks import *
+from .manager import *
 
 
 class Opt(BaseClass):

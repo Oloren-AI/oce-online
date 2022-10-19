@@ -1,16 +1,15 @@
 import os
+from typing import Any, List, Union
 
 import numpy as np
-
-from typing import List, Union, Any
 from rdkit import Chem
 
 import olorenchemengine as oce
-
 from olorenchemengine.base_class import log_arguments
-from olorenchemengine.representations import BaseVecRepresentation
 from olorenchemengine.internal import download_public_file
-from .operations import MolSentence, sentences2vec, mol2alt_sentence, DfVec
+from olorenchemengine.representations import BaseVecRepresentation
+
+from .operations import DfVec, MolSentence, mol2alt_sentence, sentences2vec
 
 
 class Mol2Vec(BaseVecRepresentation):

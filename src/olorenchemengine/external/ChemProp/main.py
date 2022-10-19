@@ -4,30 +4,25 @@ Here, we adapt its PyTorch Geometric implementation as in the `Github repository
 
 """
 
-from olorenchemengine.representations import (
-    AtomFeaturizer,
-    BondFeaturizer,
-    TorchGeometricGraph,
-)
-from olorenchemengine.base_class import BaseModel, log_arguments, QuantileTransformer
+import io
 
-from olorenchemengine.internal import mock_imports
-
-from torch_geometric.loader import DataLoader
-from torch_geometric.data import Data, Dataset
-from torch_geometric.data.data import size_repr
-from torch_geometric.nn import global_mean_pool
-from torch_scatter import scatter_sum
-
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.utils.data
-
-import numpy as np
 from rdkit import Chem
-import io
+from torch_geometric.data import Data, Dataset
+from torch_geometric.data.data import size_repr
+from torch_geometric.loader import DataLoader
+from torch_geometric.nn import global_mean_pool
+from torch_scatter import scatter_sum
 from tqdm import tqdm
+
+from olorenchemengine.base_class import (BaseModel, QuantileTransformer,
+                                         log_arguments)
+from olorenchemengine.internal import mock_imports
+from olorenchemengine.representations import (AtomFeaturizer, BondFeaturizer,
+                                              TorchGeometricGraph)
 
 
 class RevIndexedData(Data):

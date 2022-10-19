@@ -1,9 +1,10 @@
 from random import random
-import pytest
-import olorenchemengine as oce
-import pandas as pd
-from olorenchemengine.internal import download_public_file
 
+import pandas as pd
+import pytest
+
+import olorenchemengine as oce
+from olorenchemengine.internal import download_public_file
 
 __author__ = "Oloren AI"
 __copyright__ = "Oloren AI"

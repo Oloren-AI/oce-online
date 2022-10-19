@@ -6,9 +6,10 @@
     PyScaffold helps you to put up the scaffold of your new Python project.
     Learn more under: https://pyscaffold.org/
 """
-from setuptools import setup
-import os
 import codecs
+import os
+
+from setuptools import setup
 
 
 def read(rel_path):

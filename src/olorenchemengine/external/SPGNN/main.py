@@ -3,46 +3,31 @@
 `GitHub repository <https://github.com/snap-stanford/pretrain-gnns>`_
 """
 
-from olorenchemengine.internal import mock_imports
+import io
+import os
+from typing import Dict, List, Optional, Tuple, Union
 
-from torch_geometric.data import DataLoader
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
-
-from tqdm import tqdm
-import numpy as np
-
-from .model import (
-    GNN_graphpred,
-    GNN,
-    global_add_pool,
-    global_mean_pool,
-    global_max_pool,
-    GlobalAttention,
-    Set2Set,
-)
+from rdkit import Chem
 from sklearn.metrics import roc_auc_score
+from torch_geometric.data import DataLoader
+from tqdm import tqdm
 
 import olorenchemengine as oce
-from olorenchemengine.representations import (
-    AtomFeaturizer,
-    BaseRepresentation,
-    BondFeaturizer,
-    TorchGeometricGraph,
-    BaseVecRepresentation,
-)
+from olorenchemengine.base_class import (BaseModel, QuantileTransformer,
+                                         log_arguments)
+from olorenchemengine.internal import download_public_file, mock_imports
+from olorenchemengine.representations import (AtomFeaturizer,
+                                              BaseRepresentation,
+                                              BaseVecRepresentation,
+                                              BondFeaturizer,
+                                              TorchGeometricGraph)
 
-import os
-import io
-from typing import Union, List, Tuple, Dict, Optional
-
-from olorenchemengine.base_class import BaseModel, log_arguments, QuantileTransformer
-from olorenchemengine.internal import download_public_file
-
-from rdkit import Chem
+from .model import (GNN, GlobalAttention, GNN_graphpred, Set2Set,
+                    global_add_pool, global_max_pool, global_mean_pool)
 
 allowable_features = {
     "possible_atomic_num_list": list(range(1, 119)),

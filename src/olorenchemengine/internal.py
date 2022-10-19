@@ -1,21 +1,22 @@
 import base64
-import numpy as np
-import pandas as pd
-import tempfile
 import contextlib
 import hashlib
 import inspect
 import json
 import os
 import pickle
+import subprocess
+import sys
+import tempfile
 from abc import ABC, abstractmethod
 from typing import Callable, Union
-import subprocess
+from unittest.mock import MagicMock
+
+import numpy as np
+import pandas as pd
 import pyrebase  # Default pyrebase is pyrebase3 which won't work. Need to install pyrebase4 (pip install pyrebase4)
 from google.cloud.firestore import Client
 from google.oauth2.credentials import Credentials
-import sys
-from unittest.mock import MagicMock
 
 import olorenchemengine
 
@@ -583,7 +584,8 @@ class BaseRemoteSymbol:
                     + f"/{REMOTE_ID}.oce"
                 ).put(tmp.name, oas_connector.uid_token)
         except:
-            import traceback, sys
+            import sys
+            import traceback
 
             traceback.print_exc()
             sys.exit(0)

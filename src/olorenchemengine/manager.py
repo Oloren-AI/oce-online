@@ -1,11 +1,12 @@
 from timeit import default_timer as timer
 from typing import List
 
+from tqdm import tqdm
+
 import olorenchemengine as oce
+
 from .base_class import *
 from .dataset import *
-
-from tqdm import tqdm
 
 
 def TOP_MODELS_ADMET() -> List[BaseModel]:
@@ -349,8 +350,7 @@ class FirebaseModelManager(BaseModelManager):
         log=True,
     ):
         import firebase_admin
-        from firebase_admin import credentials
-        from firebase_admin import firestore
+        from firebase_admin import credentials, firestore
 
         if "FIREBASE_CREDENTIALS_CERTIFICATE" in oce.CONFIG:
             cred = credentials.Certificate(

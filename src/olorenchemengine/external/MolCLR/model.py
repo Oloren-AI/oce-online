@@ -1,21 +1,17 @@
 import math
 
 import torch
-from torch import nn
 import torch.nn.functional as F
-from torch.nn import Parameter
-from torch.nn import Linear, LayerNorm, ReLU
-
 import torch_sparse
-from torch_sparse import SparseTensor, matmul, fill_diag, sum as sparsesum, mul
-from torch_scatter import scatter
-from torch_scatter import scatter_add
-
-from torch_geometric.nn import MessagePassing, GCNConv
+from torch import nn
+from torch.nn import LayerNorm, Linear, Parameter, ReLU
+from torch_geometric.nn import (GCNConv, MessagePassing, global_add_pool,
+                                global_max_pool, global_mean_pool)
 from torch_geometric.utils import add_self_loops, degree, softmax
-from torch_geometric.nn import global_add_pool, global_mean_pool, global_max_pool
-
 from torch_geometric.utils.num_nodes import maybe_num_nodes
+from torch_scatter import scatter, scatter_add
+from torch_sparse import SparseTensor, fill_diag, matmul, mul
+from torch_sparse import sum as sparsesum
 
 num_atom_type = 119  # including the extra mask tokens
 num_chirality_tag = 3
