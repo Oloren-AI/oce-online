@@ -25,7 +25,7 @@ molecular vector representations.
                 oce.RandomForestModel(oce.OlorenCheckpoint("default"), n_estimators=1000),  # RF w/ our proprietary fingerprint
                 oce.SPGNN(model_type="contextpred"),  # fine tune a trained GNN on your data
             ])
-            
+
     model.fit(df["Smiles"], df["pChEMBL Value"])
 
     oce.save(model, "model.oce")
@@ -44,7 +44,7 @@ _______________________________
 Maintaining and developing Oloren ChemEngine requires a lot of resources. As such, we would like to log for each evaluated model the model hyperparameters, the model performance metrics and a unique, non-identifying hash of the dataset. These logs are used to improve our models. Below is a representative example of such a log:
 
 .. code-block:: javascript
-    
+
     {dataset_hash: "149eae5c763afcc14f6355007df298b05f4a51c6a334ea933fbe7fc496adb271",
 
     metric_direction: null,
@@ -63,9 +63,9 @@ The dataset hash is created with the following code:
 
     dataset_hash = joblib.hash(X) + joblib.hash(y)
 
-This means that **we log no therapeutics-related data whatsoever.** We just log hashes of model performance. 
+This means that **we log no therapeutics-related data whatsoever.** We just log hashes of model performance.
 
-If you would still prefer a logging-free version, please fill out the following form to obtain a version with all logging code excised: https://y09gl0qf49q.typeform.com/to/brGMidJ0. 
+If you would still prefer a logging-free version, please fill out the following form to obtain a version with all logging code excised: https://y09gl0qf49q.typeform.com/to/brGMidJ0.
 
 We also require contributor agreements for all versions of Oloren ChemEngine.
 
@@ -95,13 +95,19 @@ _______________________________
 Installation
 _______________________________
 
-In a Python 3.8 environment, you can install the package with the following command:
+The easiest way to get started with OCE is to use OCE Online which compiles your OCE commands and runs them on Oloren's cloud.
+
+.. code-block:: bash
+
+    pip install olorenchemengine
+
+If you want to run it locally, in a **fresh Python 3.8 environment**, you can also install the package with the following command:
 
 .. code-block:: bash
 
     bash <(curl -s https://raw.githubusercontent.com/Oloren-AI/olorenchemengine/master/install.sh)
 
-Feel free to check out install.sh to see what is happening under the hood. This will work fine in both a conda environment and a pip environment.
+Feel free to check out install.sh to see what is happening under the hood. This will work fine in both a conda environment and a pip environment, but we suggest the conda environment for the smoothest installation experience.
 
 _______________________________
 Docker
