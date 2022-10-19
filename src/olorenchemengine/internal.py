@@ -297,15 +297,6 @@ class _RemoteRuntime:
             return self.runner.get_remote_obj(remote_id)
 
     def add_instruction(self, instruction):
-        if len(json.dumps(self.instruction_buffer + [instruction])) > 30000:
-            print("Max buffer size reached, flushing...")
-            self.send_instructions_blocking()
-
-            if len(json.dumps(instruction)) > 30000:
-                print(
-                    "The instruction is very large, attempting to send, but this may result in error."
-                )
-                print("TODO: Implement chunking of very large instructions.")
 
         self.instruction_buffer.append(instruction)
 
@@ -325,6 +316,25 @@ class _RemoteRuntime:
         return self.send_instructions_blocking()
 
     def send_instructions_blocking(self):
+
+        if len(json.dumps(self.instruction_buffer)) > 30000:
+            print("Max buffer size reached, running instructions separately...")
+
+            full_buffer = self.instruction_buffer
+            for cmd in full_buffer[:-1]:
+                self.instruction_buffer = [cmd]
+
+                if len(json.dumps(self.instruction_buffer)) > 30000:
+                    import logging; logging.warning("Instruction may be too large to send to remote. Instruction chunking not yet implemented.")
+
+                self.send_instructions_blocking()
+
+            self.instruction_buffer = [full_buffer[-1]]
+
+            if len(json.dumps(self.instruction_buffer)) > 30000:
+                import logging; logging.warning("Instruction may be too large to send to remote. Instruction chunking not yet implemented.")
+
+            return self.send_instructions_blocking()
 
         if self.debug:
             print("Sending instructions...")
