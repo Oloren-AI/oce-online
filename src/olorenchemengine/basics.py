@@ -388,7 +388,6 @@ class TorchMLP(BaseModel):
             self.norm_layer = None
 
         self.dropout = dropout
-        self.network = "Not Fitted Yet"
 
         super().__init__(representation, log=False)
 
@@ -434,6 +433,7 @@ class TorchMLP(BaseModel):
 
     def _save(self) -> str:
         d = super()._save()
+        if not hasattr(self, "network"): return d
         buffer = io.BytesIO()
         import torch
         torch.save(self.network, buffer)
@@ -442,6 +442,7 @@ class TorchMLP(BaseModel):
 
     def _load(self, d):
         super()._load(d)
+        if not "save" in d: return
         import torch
         self.network = torch.load(io.BytesIO(d["save"]))
 
