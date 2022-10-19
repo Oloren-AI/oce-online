@@ -320,6 +320,7 @@ class _RemoteRuntime:
 
         response = None
 
+        oas_connector.authenticate()
         _, execution = oas_connector.logging_db.collection("executions").add(
             {
                 "uid": oas_connector.uid,
