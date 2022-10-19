@@ -325,14 +325,14 @@ class _RemoteRuntime:
                 self.instruction_buffer = [cmd]
 
                 if len(json.dumps(self.instruction_buffer)) > 30000:
-                    import logging; logging.warning("Instruction may be too large to send to remote. Instruction chunking not yet implemented.")
+                    raise Exception("Instruction too large to send to remote.")
 
                 self.send_instructions_blocking()
 
             self.instruction_buffer = [full_buffer[-1]]
 
             if len(json.dumps(self.instruction_buffer)) > 30000:
-                import logging; logging.warning("Instruction may be too large to send to remote. Instruction chunking not yet implemented.")
+                raise Exception("Instruction too large to send to remote.")
 
             return self.send_instructions_blocking()
 
