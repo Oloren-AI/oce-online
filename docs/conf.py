@@ -94,7 +94,7 @@ for _ in range(50):
 print(autodoc_mock_imports)
 
 gtagjs_ids = [
-    'G-R5E6ME01BB',
+    "G-R5E6ME01BB",
 ]
 
 # Add any paths that contain templates here, relative to this directory.

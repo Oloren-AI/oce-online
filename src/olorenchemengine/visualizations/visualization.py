@@ -22,8 +22,9 @@ from olorenchemengine.ensemble import *
 from rdkit import Chem
 from rdkit.Chem import Draw
 
+
 def get_oas_compatible_visualizations():
-    """ Returns a list of all available visualizations that are compatible with OAS,
+    """Returns a list of all available visualizations that are compatible with OAS,
     meaning that they can be created and specified in OAS. All visualizations
     can be shared via OAS."""
 
@@ -35,7 +36,10 @@ def get_oas_compatible_visualizations():
         vis.__name__
         for vis in all_visualizations
         if hasattr(vis, "get_attributes")
-        and (not hasattr(vis.__bases__[0], "get_attributes") or vis.get_attributes != vis.__bases__[0].get_attributes)
+        and (
+            not hasattr(vis.__bases__[0], "get_attributes")
+            or vis.get_attributes != vis.__bases__[0].get_attributes
+        )
     ]
 
 
@@ -65,8 +69,7 @@ class BaseVisualization(BaseClass):
         self.packages = []
 
     def get_data() -> dict:
-        """Get data for visualization in JSON-like dictionary.
-        """
+        """Get data for visualization in JSON-like dictionary."""
 
         return {}
 
@@ -76,7 +79,9 @@ class BaseVisualization(BaseClass):
 
         Returns:
             list: List of attributes for OAS to display."""
-        raise NotImplementedError("get_attributes must be implemented for this visualization")
+        raise NotImplementedError(
+            "get_attributes must be implemented for this visualization"
+        )
 
     @classmethod
     def from_attributes(cls, attributes: dict) -> "BaseVisualization":
@@ -90,7 +95,9 @@ class BaseVisualization(BaseClass):
             vis = cls(**attributes)
             return vis
         except Exception as e:
-            raise ValueError(f"Error creating visualization {cls.__name__} using {attributes}: {e}")
+            raise ValueError(
+                f"Error creating visualization {cls.__name__} using {attributes}: {e}"
+            )
 
     @property
     def JS_NAME(self) -> str:
@@ -103,7 +110,7 @@ class BaseVisualization(BaseClass):
         return self.__class__.__name__
 
     def get_html(self, data_str: str, packages: str, **kwargs):
-        """ Returns the HTML code for the visualization.
+        """Returns the HTML code for the visualization.
 
         Parameters:
             data_str (str): JSON string of data to be used in visualization.
@@ -142,7 +149,10 @@ class BaseVisualization(BaseClass):
             str: JavaScript code for visualization.
         """
 
-        with open(os.path.join(os.path.dirname(__file__), "scripts/", self.JS_NAME + ".js"), "r") as f:
+        with open(
+            os.path.join(os.path.dirname(__file__), "scripts/", self.JS_NAME + ".js"),
+            "r",
+        ) as f:
             js = f.read()
 
         resize = (
@@ -166,7 +176,7 @@ class BaseVisualization(BaseClass):
         # Formats the data to be properly JSON
         if data is None:
             data_str = (
-                json.dumps(self.get_data(**kwargs), separators=(',', ':'))
+                json.dumps(self.get_data(**kwargs), separators=(",", ":"))
                 .replace('"', "&quot;")
                 .replace("None", "null")
                 .replace("NaN", "null")
@@ -175,7 +185,7 @@ class BaseVisualization(BaseClass):
             )
         else:
             data_str = (
-                json.dumps(data, separators=(',', ':'))
+                json.dumps(data, separators=(",", ":"))
                 .replace('"', "&quot;")
                 .replace("None", "null")
                 .replace("NaN", "null")
@@ -184,7 +194,12 @@ class BaseVisualization(BaseClass):
             )
 
         # Compiles package imports into HTML
-        packages = "".join([f'<script src = "{self.package_urls[package]}"></script>' for package in self.packages])
+        packages = "".join(
+            [
+                f'<script src = "{self.package_urls[package]}"></script>'
+                for package in self.packages
+            ]
+        )
         # Get base HTML code for visualization
         html = self.get_html(data_str, packages)
 
@@ -211,7 +226,9 @@ class BaseVisualization(BaseClass):
             print_html_js (bool): Whether or not to print the JavaScript code for the
                 visualization.
         """
-        return IFrame(self.render_data_url(data, print_html_js, **kwargs), width=800, height=600)
+        return IFrame(
+            self.render_data_url(data, print_html_js, **kwargs), width=800, height=600
+        )
 
     def render_data_url(self, data: dict = None, print_html_js=False, **kwargs) -> str:
         """Render visualization to data_url string.
@@ -222,7 +239,9 @@ class BaseVisualization(BaseClass):
             print_html_js (bool): Whether or not to print the JavaScript code for the
                 visualization.
         """
-        data_url = "data:text/html," + urllib.parse.quote(self.render(data, print_html_js, **kwargs), safe="")
+        data_url = "data:text/html," + urllib.parse.quote(
+            self.render(data, print_html_js, **kwargs), safe=""
+        )
         return data_url
 
     def upload_oas(self):
@@ -242,6 +261,7 @@ class BaseVisualization(BaseClass):
     def _load(self, d: dict):
         pass
 
+
 class VisualizeError(BaseVisualization):
     """Visualizes property values and errors for a compound
 
@@ -256,6 +276,7 @@ class VisualizeError(BaseVisualization):
             if dataset is a BaseDataset.
         yaxis_title (str): Title for y-axis.
     """
+
     @log_arguments
     def __init__(
         self,
@@ -270,7 +291,7 @@ class VisualizeError(BaseVisualization):
         yaxis_title=None,
         width=800,
         height=600,
-        **kwargs
+        **kwargs,
     ):
         assert error >= 0, "error must be nonnegative"
 
@@ -312,13 +333,13 @@ class VisualizeError(BaseVisualization):
             self.ci = int(ci * 100)
 
         self.title = title
-        self.width=width
-        self.height=height
+        self.width = width
+        self.height = height
         super().__init__(**kwargs)
         self.packages = ["plotly"]
 
     def get_data(self):
-        d =  {
+        d = {
             "reference": self.reference,
             "value": self.value,
             "error": self.error,
@@ -336,6 +357,7 @@ class VisualizeError(BaseVisualization):
             d["ci"] = self.ci
 
         return d
+
 
 class VisualizeCompounds(BaseVisualization):
     """Visualizes the compounds in a set.
@@ -356,12 +378,27 @@ class VisualizeCompounds(BaseVisualization):
         shuffle = True (bool): Whether or not to shuffle the compounds."""
 
     @log_arguments
-    def __init__(self, dataset: Union[BaseDataset, list, pd.Series, str, Chem.Mol], table_width: int = 1, table_height: int = 5,
-        compound_width: int = 500, compound_height: int = 500, annotations = None, kekulize = True,
-        box=False, shuffle=False,log=True, **kwargs):
+    def __init__(
+        self,
+        dataset: Union[BaseDataset, list, pd.Series, str, Chem.Mol],
+        table_width: int = 1,
+        table_height: int = 5,
+        compound_width: int = 500,
+        compound_height: int = 500,
+        annotations=None,
+        kekulize=True,
+        box=False,
+        shuffle=False,
+        log=True,
+        **kwargs,
+    ):
         self.dataset = dataset
         if issubclass(type(dataset), BaseDataset):
-            self.compounds = dataset.data[dataset.structure_col].head(table_width * table_height).tolist()
+            self.compounds = (
+                dataset.data[dataset.structure_col]
+                .head(table_width * table_height)
+                .tolist()
+            )
         elif isinstance(dataset, pd.Series):
             self.compounds = dataset.tolist()
         elif isinstance(dataset, list):
@@ -375,6 +412,7 @@ class VisualizeCompounds(BaseVisualization):
             self.compounds = [Chem.MolToSmiles(dataset)]
         if shuffle:
             import random
+
             random.shuffle(self.compounds)
 
         if not issubclass(type(dataset), BaseDataset):
@@ -396,22 +434,38 @@ class VisualizeCompounds(BaseVisualization):
 
     def get_data(self):
         if self.kekulize:
-            self.compounds = [Chem.MolToSmiles(Chem.MolFromSmiles(s, sanitize=False), kekuleSmiles = True) for s in self.compounds]
-            d =  {"smiles": self.compounds,
+            self.compounds = [
+                Chem.MolToSmiles(
+                    Chem.MolFromSmiles(s, sanitize=False), kekuleSmiles=True
+                )
+                for s in self.compounds
+            ]
+            d = {
+                "smiles": self.compounds,
                 "table_width": self.table_width,
                 "table_height": self.table_height,
                 "compound_width": self.compound_width,
                 "compound_height": self.compound_height,
-                "box": self.box}
+                "box": self.box,
+            }
 
         if not self.annotations is None:
-            d.update({"annotations": {col: self.dataset.data[col].tolist() for col in self.annotations}})
+            d.update(
+                {
+                    "annotations": {
+                        col: self.dataset.data[col].tolist() for col in self.annotations
+                    }
+                }
+            )
 
         return d
 
+
 class VisualizeDatasetCompounds(VisualizeCompounds):
     """Alias for VisualizeCompounds"""
+
     pass
+
 
 class ScatterPlot(BaseVisualization):
     """Scatter plot visualization.
@@ -435,7 +489,7 @@ class ScatterPlot(BaseVisualization):
 
 
 class CompoundScatterPlot(BaseVisualization):
-    """ Scatter plot visualization, where molecules are displayed on hover on
+    """Scatter plot visualization, where molecules are displayed on hover on
     an x-y plane.
 
     Parameters:
@@ -487,8 +541,8 @@ class CompoundScatterPlot(BaseVisualization):
         title: str = "Compound Scatter Plot",
         xaxis_title: str = "X axis",
         yaxis_title: str = "y axis",
-        x_col: str =    None,
-        y_col: str =    None,
+        x_col: str = None,
+        y_col: str = None,
         smiles_col: str = None,
         kekulize: bool = True,
         color_col: str = None,
@@ -589,7 +643,15 @@ class CompoundScatterPlot(BaseVisualization):
 
         if include_data:
             d = self.df.to_dict("l")
-            d["SMILES"] = self.df["SMILES"].apply(lambda x: Chem.MolToSmiles(Chem.MolFromSmiles(x), kekuleSmiles=self.kekulize)).tolist()
+            d["SMILES"] = (
+                self.df["SMILES"]
+                .apply(
+                    lambda x: Chem.MolToSmiles(
+                        Chem.MolFromSmiles(x), kekuleSmiles=self.kekulize
+                    )
+                )
+                .tolist()
+            )
         else:
             d = dict()
         d["title"] = self.title
@@ -629,7 +691,15 @@ class CompoundScatterPlot(BaseVisualization):
         Returns:
             list: List of attributes for OAS to display.
         """
-        return [{"Labels": [["title", "inputString"], ["xaxis_title", "inputString"], ["yaxis_title", "inputString"]]}]
+        return [
+            {
+                "Labels": [
+                    ["title", "inputString"],
+                    ["xaxis_title", "inputString"],
+                    ["yaxis_title", "inputString"],
+                ]
+            }
+        ]
 
 
 from sklearn.decomposition import PCA
@@ -637,7 +707,7 @@ from sklearn.manifold import TSNE
 
 
 class ChemicalSpacePlot(CompoundScatterPlot):
-    """ Visualize chemical space by calculating a vector representation and
+    """Visualize chemical space by calculating a vector representation and
     performing dimensionality reduction to 2 dimensions.
 
     Parameters:
@@ -653,18 +723,28 @@ class ChemicalSpacePlot(CompoundScatterPlot):
             chemical space plot
         colorscale (str, optional): Color scale to use for coloring the chemical space plot.
             Other options can be found
-        """
+    """
 
     @log_arguments
-    def __init__(self, dataset: Union[BaseDataset, list, pd.Series, pd.DataFrame], rep: BaseCompoundVecRepresentation,
-            *args, dim_reduction="tsne",
-            smiles_col=None, title ="Chemical Space Plot", log=True, **kwargs):
+    def __init__(
+        self,
+        dataset: Union[BaseDataset, list, pd.Series, pd.DataFrame],
+        rep: BaseCompoundVecRepresentation,
+        *args,
+        dim_reduction="tsne",
+        smiles_col=None,
+        title="Chemical Space Plot",
+        log=True,
+        **kwargs,
+    ):
 
         # Sets visualization instance variables
         if issubclass(type(dataset), BaseDataset):
             self.structures = dataset.data[dataset.structure_col]
         elif isinstance(dataset, pd.DataFrame):
-            assert smiles_col is not None, "smiles_col must be defined if `dataset` parameter is pd.DataFrame"
+            assert (
+                smiles_col is not None
+            ), "smiles_col must be defined if `dataset` parameter is pd.DataFrame"
             self.structures = dataset[smiles_col]
         else:
             self.structures = dataset
@@ -695,9 +775,16 @@ class ChemicalSpacePlot(CompoundScatterPlot):
 
         self.title = title
 
-        super().__init__(self.df, *args, title=self.title,
-            xaxis_title="Component 1", yaxis_title="Component 2", smiles_col = smiles_col,
-            log=False, **kwargs)
+        super().__init__(
+            self.df,
+            *args,
+            title=self.title,
+            xaxis_title="Component 1",
+            yaxis_title="Component 2",
+            smiles_col=smiles_col,
+            log=False,
+            **kwargs,
+        )
 
     def tsne_df(self, chem_rep_list):
         """
@@ -729,23 +816,30 @@ class ChemicalSpacePlot(CompoundScatterPlot):
         pca_arr = pca.fit_transform(chem_rep_list)
         return pd.DataFrame(pca_arr, columns=["Component 1", "Component 2"])
 
-    def get_data(self, color_col: str = None, size_col: str = None, SMILES: str = None) -> dict:
+    def get_data(
+        self, color_col: str = None, size_col: str = None, SMILES: str = None
+    ) -> dict:
         d = super().get_data(include_data=True)
 
         self.color_col = color_col
         if not self.color_col is None:
-            assert self.color_col in self.df.columns, f"specified color column, {self.color_col}, not in columns"
+            assert (
+                self.color_col in self.df.columns
+            ), f"specified color column, {self.color_col}, not in columns"
             d["color"] = self.df[self.color_col].tolist()
 
         self.size_col = size_col
         if not self.size_col is None:
-            assert self.size_col in self.df.columns, f"specified size column, {self.size_col}, not in columns"
+            assert (
+                self.size_col in self.df.columns
+            ), f"specified size column, {self.size_col}, not in columns"
             d["size"] = self.df[self.size_col].tolist()
 
         return d
 
+
 class VisualizeMoleculePerturbations(ChemicalSpacePlot):
-    """ Visualize perturbations of a single molecule given from a PerturbationEngine
+    """Visualize perturbations of a single molecule given from a PerturbationEngine
     in a ChemicalSpacePlot.
 
     Parameters:
@@ -756,14 +850,17 @@ class VisualizeMoleculePerturbations(ChemicalSpacePlot):
             dimensionality reduction"""
 
     @log_arguments
-    def __init__(self, smiles: str,
-            perturbation_engine: PerturbationEngine = None,
-            rep: BaseVecRepresentation = None,
-            idx: int = None,
-            n: int = None):
+    def __init__(
+        self,
+        smiles: str,
+        perturbation_engine: PerturbationEngine = None,
+        rep: BaseVecRepresentation = None,
+        idx: int = None,
+        n: int = None,
+    ):
         self.smiles = smiles
         if perturbation_engine is None:
-            self.perturbation_engine = SwapMutations(radius = 0)
+            self.perturbation_engine = SwapMutations(radius=0)
         else:
             self.perturbation_engine = perturbation_engine
         if rep is None:
@@ -783,20 +880,33 @@ class VisualizeMoleculePerturbations(ChemicalSpacePlot):
         if idx is None:
             df["SMILES"] = self.perturbation_engine.get_compound_list(smiles) + [smiles]
         else:
-            df["SMILES"] = self.perturbation_engine.get_compound_list(smiles, idx = idx)+ [smiles]
+            df["SMILES"] = self.perturbation_engine.get_compound_list(
+                smiles, idx=idx
+            ) + [smiles]
         df["mols"] = [Chem.MolFromSmiles(s) for s in df["SMILES"]]
-        df = df.dropna(subset = ["mols"])
+        df = df.dropna(subset=["mols"])
 
-        fps = [AllChem.GetMorganFingerprintAsBitVect(m, 2, nBits=2048, useChirality=False) for m in df["mols"]]
+        fps = [
+            AllChem.GetMorganFingerprintAsBitVect(m, 2, nBits=2048, useChirality=False)
+            for m in df["mols"]
+        ]
 
-        df["sim"] = DataStructs.BulkTanimotoSimilarity(AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(self.smiles), 2, nBits=2048, useChirality=False) , fps)
+        df["sim"] = DataStructs.BulkTanimotoSimilarity(
+            AllChem.GetMorganFingerprintAsBitVect(
+                Chem.MolFromSmiles(self.smiles), 2, nBits=2048, useChirality=False
+            ),
+            fps,
+        )
 
-        super().__init__(df,
-                self.rep,
-                title = "Chemical Space Plot of Molecular Perturbations<br><sub>Points colored by tanimoto similarity to the reference compund</sub>",
-                color_col = "sim",
-                smiles_col = "SMILES",
-                colorscale = "YlOrRd")
+        super().__init__(
+            df,
+            self.rep,
+            title="Chemical Space Plot of Molecular Perturbations<br><sub>Points colored by tanimoto similarity to the reference compund</sub>",
+            color_col="sim",
+            smiles_col="SMILES",
+            colorscale="YlOrRd",
+        )
+
 
 class VisualizeDatasetSplit(ChemicalSpacePlot):
     """Visualize a dataset by seeing where train/test compounds are in a dimensionality
@@ -843,7 +953,7 @@ class VisualizeDatasetSplit(ChemicalSpacePlot):
                 *args,
                 title="Dataset Visualization<br><sub>Red outline is train; Blue outline is test</sub>",
                 dim_reduction="tsne",
-                opacity = self.opacity,
+                opacity=self.opacity,
                 log=False,
                 **kwargs,
             )
@@ -854,7 +964,7 @@ class VisualizeDatasetSplit(ChemicalSpacePlot):
                 *args,
                 title="Model Residual Visualization<br><sub>Red outline is train; Blue outline is test; Marker size is residual magnitude</sub>",
                 dim_reduction="tsne",
-                opacity = self.opacity,
+                opacity=self.opacity,
                 log=False,
                 **kwargs,
             )
@@ -863,11 +973,20 @@ class VisualizeDatasetSplit(ChemicalSpacePlot):
         d = super().get_data(SMILES=self.dataset.structure_col)
 
         if self.model is None:
-            d["color"] = ["red" if x == "train" else "blue" for x in self.dataset.entire_dataset_split]
+            d["color"] = [
+                "red" if x == "train" else "blue"
+                for x in self.dataset.entire_dataset_split
+            ]
         else:
-            d["outline"] = ["red" if x == "train" else "blue" for x in self.dataset.entire_dataset_split]
+            d["outline"] = [
+                "red" if x == "train" else "blue"
+                for x in self.dataset.entire_dataset_split
+            ]
 
-            residuals = (self.dataset.entire_dataset[1] - self.model.predict(self.dataset.entire_dataset[0])) ** 2
+            residuals = (
+                self.dataset.entire_dataset[1]
+                - self.model.predict(self.dataset.entire_dataset[0])
+            ) ** 2
             if self.res_lim is None:
                 self.res_lim = np.percentile(residuals, 90)
             residuals = residuals / self.res_lim
@@ -882,8 +1001,16 @@ class VisualizeDatasetSplit(ChemicalSpacePlot):
     @staticmethod
     def get_attributes():
         return [
-            {"Dataset Selection": [["dataset", "datasetSelector"],]},
-            {"Configure Chemical Space": [["rep", "selector", ["oce", "rdkit2d-normed", "morgan"]],]},
+            {
+                "Dataset Selection": [
+                    ["dataset", "datasetSelector"],
+                ]
+            },
+            {
+                "Configure Chemical Space": [
+                    ["rep", "selector", ["oce", "rdkit2d-normed", "morgan"]],
+                ]
+            },
         ]
 
     @classmethod
@@ -900,7 +1027,9 @@ class VisualizeDatasetSplit(ChemicalSpacePlot):
 
         return super(ChemicalSpacePlot, cls).from_attributes(attributes)
 
+
 from rdkit.Chem import Draw
+
 
 class MorganContributions(BaseVisualization):
     """Visualize a morgan fingerprint bit contributions of a molecule.
@@ -922,26 +1051,26 @@ class MorganContributions(BaseVisualization):
             Default is 2.
         nbits(int, optional): Parameter for the Morgan representation.
             Default is 1024.
-        """
+    """
 
     @log_arguments
     def __init__(
-            self,
-            smiles: str,
-            dataset: BaseDataset,
-            compound_id: str = "The compound",
-            radius=2,
-            nbits=1024,
-            *args,
-            **kwargs
-        ):
+        self,
+        smiles: str,
+        dataset: BaseDataset,
+        compound_id: str = "The compound",
+        radius=2,
+        nbits=1024,
+        *args,
+        **kwargs,
+    ):
         self.radius = radius
         self.nbits = nbits
         self.dataset = dataset
         self.property = dataset.property_col
 
         self.smiles = smiles
-        self.compound_id = compound_id,
+        self.compound_id = (compound_id,)
         self.model = self._train_model()
         self.original_prediction, self.predictions = self._make_predictions(self.smiles)
         self.args = args
@@ -949,13 +1078,16 @@ class MorganContributions(BaseVisualization):
         self.packages = ["plotly", "rdkit", "olorenrenderer"]
 
     def _train_model(self):
-        """ Train random forest model based on the morgan vec representation"""
-        model = oce.RandomForestModel(MorganVecRepresentation(scale=None, collinear_thresh=1.01), n_estimators=1000)
+        """Train random forest model based on the morgan vec representation"""
+        model = oce.RandomForestModel(
+            MorganVecRepresentation(scale=None, collinear_thresh=1.01),
+            n_estimators=1000,
+        )
         model.fit(*self.dataset.entire_dataset)
         return model
 
     def _make_predictions(self, smiles):
-        """ Make predictions on the dataset with systematic experiments to test
+        """Make predictions on the dataset with systematic experiments to test
         the effect of bit flips."""
         morgan_rep = self._to_morgan(smiles)
         original_prediction = self.model.predict([morgan_rep], skip_preprocess=True)
@@ -965,9 +1097,8 @@ class MorganContributions(BaseVisualization):
 
         return original_prediction, predictions
 
-
     def _to_morgan(self, smiles):
-        """ Return morgan representation of given compound (represented by
+        """Return morgan representation of given compound (represented by
         smiles)."""
         return MorganVecRepresentation._convert(self, smiles)
 
@@ -1043,8 +1174,12 @@ class MorganContributions(BaseVisualization):
         self.predictions = self._calculate_effect()
         bottom_3_bits, top_3_bits = self._top_3_predictions()
 
-        mfp_svgs_min = {str(i): Draw.DrawMorganBit(mol, i, info, useSVG=True) for i in bottom_3_bits}
-        mfp_svgs_max = {str(i): Draw.DrawMorganBit(mol, i, info, useSVG=True) for i in top_3_bits}
+        mfp_svgs_min = {
+            str(i): Draw.DrawMorganBit(mol, i, info, useSVG=True) for i in bottom_3_bits
+        }
+        mfp_svgs_max = {
+            str(i): Draw.DrawMorganBit(mol, i, info, useSVG=True) for i in top_3_bits
+        }
 
         return mfp_svgs_min, mfp_svgs_max
 
@@ -1070,7 +1205,10 @@ class MorganContributions(BaseVisualization):
 
         bottom_3_min, bottom_3_max = self._filter(bottom_3_min, bottom_3_max)
         print(bottom_3_min, bottom_3_max)
-        bottom_bits, top_bits = bottom_3_bits[0:len(bottom_3_min)], top_3_bits[0:len(bottom_3_max)]
+        bottom_bits, top_bits = (
+            bottom_3_bits[0 : len(bottom_3_min)],
+            top_3_bits[0 : len(bottom_3_max)],
+        )
         substructures = self.get_substructures(bottom_bits, top_bits)
         print(substructures)
 
@@ -1123,13 +1261,17 @@ class MorganContributions(BaseVisualization):
             atom_tuples = info[i]
             atomID = atom_tuples[0][0]
             radius = atom_tuples[0][1]
-            sub_structures[str(i)] = str(self.getSubstructSmi(mol, int(atomID), int(radius))[0])
+            sub_structures[str(i)] = str(
+                self.getSubstructSmi(mol, int(atomID), int(radius))[0]
+            )
 
         for i in top_3_bits:
             atom_tuples = info[i]
             atomID = atom_tuples[0][0]
             radius = atom_tuples[0][1]
-            sub_structures[str(i)] = str(self.getSubstructSmi(mol, int(atomID), int(radius))[0])
+            sub_structures[str(i)] = str(
+                self.getSubstructSmi(mol, int(atomID), int(radius))[0]
+            )
         return sub_structures
 
     # Functions for providing detailed descriptions of MFP bits from Nadine Schneider
@@ -1139,41 +1281,48 @@ class MorganContributions(BaseVisualization):
     # The link to the source: http://rdkit.blogspot.com/2016/02/morgan-fingerprint-bit-statistics.html
 
     def _includeRingMembership(self, s, n):
-        r=';R]'
-        d="]"
-        return r.join([d.join(s.split(d)[:n]),d.join(s.split(d)[n:])])
+        r = ";R]"
+        d = "]"
+        return r.join([d.join(s.split(d)[:n]), d.join(s.split(d)[n:])])
 
     def _includeDegree(self, s, n, d):
-        r=';D'+str(d)+']'
-        d="]"
-        return r.join([d.join(s.split(d)[:n]),d.join(s.split(d)[n:])])
+        r = ";D" + str(d) + "]"
+        d = "]"
+        return r.join([d.join(s.split(d)[:n]), d.join(s.split(d)[n:])])
 
-    def _writePropsToSmiles(self, mol,smi,order):
-        #finalsmi = copy.deepcopy(smi)
+    def _writePropsToSmiles(self, mol, smi, order):
+        # finalsmi = copy.deepcopy(smi)
         finalsmi = smi
-        for i,a in enumerate(order):
+        for i, a in enumerate(order):
             atom = mol.GetAtomWithIdx(a)
             if atom.IsInRing():
-                finalsmi = self._includeRingMembership(finalsmi,i+1)
-            finalsmi = self._includeDegree(finalsmi, i+1, atom.GetDegree())
+                finalsmi = self._includeRingMembership(finalsmi, i + 1)
+            finalsmi = self._includeDegree(finalsmi, i + 1, atom.GetDegree())
         return finalsmi
 
-    def getSubstructSmi(self, mol,atomID,radius):
-        if radius>0:
-            env = Chem.FindAtomEnvironmentOfRadiusN(mol,radius,atomID)
-            atomsToUse=[]
+    def getSubstructSmi(self, mol, atomID, radius):
+        if radius > 0:
+            env = Chem.FindAtomEnvironmentOfRadiusN(mol, radius, atomID)
+            atomsToUse = []
             for b in env:
                 atomsToUse.append(mol.GetBondWithIdx(b).GetBeginAtomIdx())
                 atomsToUse.append(mol.GetBondWithIdx(b).GetEndAtomIdx())
             atomsToUse = list(set(atomsToUse))
         else:
             atomsToUse = [atomID]
-            env=None
+            env = None
 
-        smi = Chem.MolFragmentToSmiles(mol,atomsToUse,bondsToUse=env,allHsExplicit=True, allBondsExplicit=True, rootedAtAtom=atomID)
+        smi = Chem.MolFragmentToSmiles(
+            mol,
+            atomsToUse,
+            bondsToUse=env,
+            allHsExplicit=True,
+            allBondsExplicit=True,
+            rootedAtAtom=atomID,
+        )
         order = eval(mol.GetProp("_smilesAtomOutputOrder"))
-        smi2 = self._writePropsToSmiles(mol,smi,order)
-        return smi,smi2
+        smi2 = self._writePropsToSmiles(mol, smi, order)
+        return smi, smi2
 
     @staticmethod
     def get_attributes():
@@ -1194,6 +1343,7 @@ class MorganContributions(BaseVisualization):
             str: Name of JavaScript file.
         """
         return self.__class__.__name__
+
 
 class VisualizeADAN(CompoundScatterPlot):
     """Visualize a model trained on a dataset, by seeing predicted vs true
@@ -1229,13 +1379,13 @@ class VisualizeADAN(CompoundScatterPlot):
         self.model = model
         self.ADAN = oce.ADAN(None)
         self.ADAN.build(
-            self.model, 
-            X=dataset.train_dataset[0], 
-            y=np.array(dataset.train_dataset[1]), 
-            rep=rep, 
+            self.model,
+            X=dataset.train_dataset[0],
+            y=np.array(dataset.train_dataset[1]),
+            rep=rep,
             dim_reduction=dim_reduction,
             explvar=explvar,
-            threshold=threshold
+            threshold=threshold,
         )
         self.ADAN.calculate_full(dataset.test_dataset[0])
 
@@ -1270,12 +1420,15 @@ class VisualizeADAN(CompoundScatterPlot):
                 f"ADAN Criterion {criterion} correlation with squared error is {r2_score(self.adan.results[criterion], self.df['Z'])}"
             )
             import matplotlib.pyplot as plt
+
             plt.scatter(self.adan.results[criterion], self.df["Z"])
             plt.show()
         else:
             print(f"ADAN Criterion {criterion}; RMSE by class")
             for i in sorted(self.adan.results[criterion].unique()):
-                print(f"Class {i}: RMSE {np.sqrt(np.mean(self.df[self.adan.results[criterion] == i]['Z']))}")
+                print(
+                    f"Class {i}: RMSE {np.sqrt(np.mean(self.df[self.adan.results[criterion] == i]['Z']))}"
+                )
         return super().get_data()
 
     @staticmethod
@@ -1292,7 +1445,7 @@ class VisualizeADAN(CompoundScatterPlot):
 
 
 class VisualizeModelSim(CompoundScatterPlot):
-    """ Visualize a model's predicted vs true plot on given dataset, where each
+    """Visualize a model's predicted vs true plot on given dataset, where each
     point is colored by a compounds similarity to the train set
 
     Parameters:
@@ -1303,7 +1456,15 @@ class VisualizeModelSim(CompoundScatterPlot):
             or 'valid'."""
 
     @log_arguments
-    def __init__(self, dataset: BaseDataset, model: BaseModel, eval_set = "test", *args, log=True, **kwargs):
+    def __init__(
+        self,
+        dataset: BaseDataset,
+        model: BaseModel,
+        eval_set="test",
+        *args,
+        log=True,
+        **kwargs,
+    ):
         if not type(dataset) is BaseDataset:
             raise TypeError(
                 "dataset must be a BaseDataset. If you're using a Pandas Dataframe consider using df.to_csv() in the"
@@ -1316,7 +1477,10 @@ class VisualizeModelSim(CompoundScatterPlot):
         from rdkit import DataStructs
 
         fingerprinter = lambda s: AllChem.GetMorganFingerprint(Chem.MolFromSmiles(s), 4)
-        train_fps = [fingerprinter(s) for s in self.dataset.train_dataset[0][self.dataset.structure_col]]
+        train_fps = [
+            fingerprinter(s)
+            for s in self.dataset.train_dataset[0][self.dataset.structure_col]
+        ]
 
         if eval_set == "test":
             self.eval_set = self.dataset.test_dataset
@@ -1325,8 +1489,12 @@ class VisualizeModelSim(CompoundScatterPlot):
         elif eval_set == "valid":
             self.eval_set = self.dataset.valid_dataset
 
-        eval_fps = [fingerprinter(s) for s in self.eval_set[0][self.dataset.structure_col]]
-        self.sim = np.array([max(DataStructs.BulkTanimotoSimilarity(fp, train_fps)) for fp in eval_fps])
+        eval_fps = [
+            fingerprinter(s) for s in self.eval_set[0][self.dataset.structure_col]
+        ]
+        self.sim = np.array(
+            [max(DataStructs.BulkTanimotoSimilarity(fp, train_fps)) for fp in eval_fps]
+        )
 
         self.df = pd.DataFrame(
             {
@@ -1350,15 +1518,30 @@ class VisualizeModelSim(CompoundScatterPlot):
     def get_data(self) -> dict:
         d = super().get_data()
         d["color"] = self.sim.tolist()
-        d["trace_update"] = {'x':[0.9*min(self.df["X"].min(), self.df["Y"].min()), 1.1*max(self.df["X"].max(), self.df["Y"].max())],
-            'y':[0.9*min(self.df["X"].min(), self.df["Y"].min()), 1.1*max(self.df["X"].max(), self.df["Y"].max())],
-            'mode': 'line',
-            'type': 'scatter'}
+        d["trace_update"] = {
+            "x": [
+                0.9 * min(self.df["X"].min(), self.df["Y"].min()),
+                1.1 * max(self.df["X"].max(), self.df["Y"].max()),
+            ],
+            "y": [
+                0.9 * min(self.df["X"].min(), self.df["Y"].min()),
+                1.1 * max(self.df["X"].max(), self.df["Y"].max()),
+            ],
+            "mode": "line",
+            "type": "scatter",
+        }
         return d
 
     @staticmethod
     def get_attributes():
-        return [{"Select a Model/Dataset": [["model", "modelSelector"], ["dataset", "datasetSelector"],]}]
+        return [
+            {
+                "Select a Model/Dataset": [
+                    ["model", "modelSelector"],
+                    ["dataset", "datasetSelector"],
+                ]
+            }
+        ]
 
 
 class VisualizeCounterfactual(CompoundScatterPlot):
@@ -1395,17 +1578,24 @@ class VisualizeCounterfactual(CompoundScatterPlot):
         if type(delta) in (float, int):
             delta = (-delta, delta)
         self.delta = delta
-        self.cf_engine = CounterfactualEngine(model=self.model, perturbation_engine=self.perturbation_engine)
+        self.cf_engine = CounterfactualEngine(
+            model=self.model, perturbation_engine=self.perturbation_engine
+        )
         self.cf_engine.generate_samples(self.smiles)
 
         self.cf_engine.generate_cfs(delta=self.delta, n=n // 2)
         self.base = self.cf_engine.samples[0]["Value"]
 
         if self.model.setting == "classification":
-            self.factuals = self.cf_engine._select_cfs(lambda s: s["Value"] == self.base, n // 2)
+            self.factuals = self.cf_engine._select_cfs(
+                lambda s: s["Value"] == self.base, n // 2
+            )
         else:
             self.factuals = self.cf_engine._select_cfs(
-                lambda s: s["Value"] - self.delta[0] > self.base > s["Value"] - self.delta[1], n // 2
+                lambda s: s["Value"] - self.delta[0]
+                > self.base
+                > s["Value"] - self.delta[1],
+                n // 2,
             )
 
         samples = self.cf_engine.cfs + self.factuals
@@ -1446,8 +1636,16 @@ class VisualizeCounterfactual(CompoundScatterPlot):
             get_cf_type = lambda s: "Counterfactual"
         else:
             get_color = lambda s: "#EF553B" if s["Value"] > self.base else "#636EFA"
-            get_cf_type = lambda s: "High Counterfactual" if s["Value"] > self.base else "Low Counterfactual"
-        self.df["color"] = ["#00CC96"] + [get_color(s) for s in self.cf_engine.cfs[1:]] + ["#FECB52"] * len(self.factuals)
+            get_cf_type = (
+                lambda s: "High Counterfactual"
+                if s["Value"] > self.base
+                else "Low Counterfactual"
+            )
+        self.df["color"] = (
+            ["#00CC96"]
+            + [get_color(s) for s in self.cf_engine.cfs[1:]]
+            + ["#FECB52"] * len(self.factuals)
+        )
 
         format_label = lambda s: "Similarity = {}<br>f(x) = {}".format(
             np.round(s["Similarity"], 2), np.round(s["Value"], 3)
@@ -1457,12 +1655,17 @@ class VisualizeCounterfactual(CompoundScatterPlot):
         f_template = [format_label(s) for s in self.factuals]
         self.df["hovertemplate"] = base_template + cf_template + f_template
 
-        self.df["group"] = ["Base"] + [get_cf_type(s) for s in self.cf_engine.cfs[1:]] + ["Factual"] * len(self.factuals)
+        self.df["group"] = (
+            ["Base"]
+            + [get_cf_type(s) for s in self.cf_engine.cfs[1:]]
+            + ["Factual"] * len(self.factuals)
+        )
         self.df["size"] = 12
         return super().get_data()
 
+
 class VisualizeModelSim2(CompoundScatterPlot):
-    """ Visualize the connection between a model's error on a given compound and
+    """Visualize the connection between a model's error on a given compound and
     specific variables.
 
     Parameters:
@@ -1476,7 +1679,16 @@ class VisualizeModelSim2(CompoundScatterPlot):
             is 'sim'."""
 
     @log_arguments
-    def __init__(self, dataset: BaseDataset, model: BaseModel, eval_set = "test", var_name = "sim", *args, log=True, **kwargs):
+    def __init__(
+        self,
+        dataset: BaseDataset,
+        model: BaseModel,
+        eval_set="test",
+        var_name="sim",
+        *args,
+        log=True,
+        **kwargs,
+    ):
 
         if not type(dataset) is BaseDataset:
             raise TypeError(
@@ -1490,7 +1702,10 @@ class VisualizeModelSim2(CompoundScatterPlot):
         from rdkit import DataStructs
 
         fingerprinter = lambda s: AllChem.GetMorganFingerprint(Chem.MolFromSmiles(s), 4)
-        train_fps = [fingerprinter(s) for s in self.dataset.train_dataset[0][self.dataset.structure_col]]
+        train_fps = [
+            fingerprinter(s)
+            for s in self.dataset.train_dataset[0][self.dataset.structure_col]
+        ]
 
         if eval_set == "test":
             self.eval_set = self.dataset.test_dataset
@@ -1499,8 +1714,12 @@ class VisualizeModelSim2(CompoundScatterPlot):
         elif eval_set == "valid":
             self.eval_set = self.dataset.valid_dataset
 
-        eval_fps = [fingerprinter(s) for s in self.eval_set[0][self.dataset.structure_col]]
-        sim = np.array([max(DataStructs.BulkTanimotoSimilarity(fp, train_fps)) for fp in eval_fps])
+        eval_fps = [
+            fingerprinter(s) for s in self.eval_set[0][self.dataset.structure_col]
+        ]
+        sim = np.array(
+            [max(DataStructs.BulkTanimotoSimilarity(fp, train_fps)) for fp in eval_fps]
+        )
 
         preds = self.model.predict(self.eval_set[0])
         error = preds - self.eval_set[1]
@@ -1538,10 +1757,18 @@ class VisualizeModelSim2(CompoundScatterPlot):
 
     @staticmethod
     def get_attributes():
-        return [{"Select a Model/Dataset": [["model", "modelSelector"], ["dataset", "datasetSelector"],]}]
+        return [
+            {
+                "Select a Model/Dataset": [
+                    ["model", "modelSelector"],
+                    ["dataset", "datasetSelector"],
+                ]
+            }
+        ]
+
 
 class ModelROC(BaseVisualization):
-    """ Visualize the ROC curve for a model.
+    """Visualize the ROC curve for a model.
 
     Parameters:
         dataset (Dataset): Dataset to evaluate model on
@@ -1551,8 +1778,16 @@ class ModelROC(BaseVisualization):
             or 'valid'. Default is 'test'."""
 
     @log_arguments
-    def __init__(self, dataset: BaseDataset, model: BaseModel, *args, eval_set="test",
-        log=True, model_name=None, **kwargs):
+    def __init__(
+        self,
+        dataset: BaseDataset,
+        model: BaseModel,
+        *args,
+        eval_set="test",
+        log=True,
+        model_name=None,
+        **kwargs,
+    ):
 
         if not type(dataset) is BaseDataset:
             raise TypeError(
@@ -1581,7 +1816,12 @@ class ModelROC(BaseVisualization):
 
         fpr, tpr, thresholds = metrics.roc_curve(y_true, preds)
         ix = np.sort(np.random.choice(np.arange(len(fpr)), size=1000, replace=True))
-        self.df = pd.DataFrame({"X": fpr[ix], "Y": tpr[ix],})
+        self.df = pd.DataFrame(
+            {
+                "X": fpr[ix],
+                "Y": tpr[ix],
+            }
+        )
 
         self.score = metrics.roc_auc_score(y_true, preds)
 
@@ -1594,7 +1834,14 @@ class ModelROC(BaseVisualization):
 
     @staticmethod
     def get_attributes():
-        return [{"Select a Model/Dataset": [["model", "modelSelector"], ["dataset", "datasetSelector"],]}]
+        return [
+            {
+                "Select a Model/Dataset": [
+                    ["model", "modelSelector"],
+                    ["dataset", "datasetSelector"],
+                ]
+            }
+        ]
 
     @property
     def JS_NAME(self) -> str:
@@ -1606,8 +1853,9 @@ class ModelROC(BaseVisualization):
         d["score"] = np.around(self.score, decimals=2)
         return d
 
+
 class ModelROCThreshold(BaseVisualization):
-    """ Visualize the ROC curve for a model.
+    """Visualize the ROC curve for a model.
 
     Parameters:
         dataset (Dataset): Dataset to evaluate model on
@@ -1617,8 +1865,16 @@ class ModelROCThreshold(BaseVisualization):
             or 'valid'. Default is 'test'."""
 
     @log_arguments
-    def __init__(self, dataset: BaseDataset, model: BaseModel, *args, eval_set="test",
-        log=True, model_name=None, **kwargs):
+    def __init__(
+        self,
+        dataset: BaseDataset,
+        model: BaseModel,
+        *args,
+        eval_set="test",
+        log=True,
+        model_name=None,
+        **kwargs,
+    ):
 
         if not type(dataset) is BaseDataset:
             raise TypeError(
@@ -1647,8 +1903,9 @@ class ModelROCThreshold(BaseVisualization):
 
         fpr, tpr, thresholds = metrics.roc_curve(y_true, preds)
         ix = np.sort(np.random.choice(np.arange(len(fpr)), size=1000, replace=True))
-        self.df = pd.DataFrame({"X": fpr[ix], "Y": tpr[ix],
-            "thresholds": thresholds[ix]},)
+        self.df = pd.DataFrame(
+            {"X": fpr[ix], "Y": tpr[ix], "thresholds": thresholds[ix]},
+        )
 
         self.score = metrics.roc_auc_score(y_true, preds)
 
@@ -1661,22 +1918,32 @@ class ModelROCThreshold(BaseVisualization):
 
     @staticmethod
     def get_attributes():
-        return [{"Select a Model/Dataset": [["model", "modelSelector"], ["dataset", "datasetSelector"],]}]
+        return [
+            {
+                "Select a Model/Dataset": [
+                    ["model", "modelSelector"],
+                    ["dataset", "datasetSelector"],
+                ]
+            }
+        ]
 
     @property
     def JS_NAME(self) -> str:
-            return "ModelROCThreshold"
+        return "ModelROCThreshold"
 
     def get_data(self) -> dict:
         d = self.df.to_dict("l")
         d["model_name"] = self.model_name
         d["score"] = np.around(self.score, decimals=2)
-        d["P"] = (sum(self.dataset.test_dataset[1]))/len(self.dataset.test_dataset[1])
-        d["N"] = (len(self.dataset.test_dataset[1]) - sum(self.dataset.test_dataset[1]))/len(self.dataset.test_dataset[1])
+        d["P"] = (sum(self.dataset.test_dataset[1])) / len(self.dataset.test_dataset[1])
+        d["N"] = (
+            len(self.dataset.test_dataset[1]) - sum(self.dataset.test_dataset[1])
+        ) / len(self.dataset.test_dataset[1])
         return d
 
+
 class ModelPR(BaseVisualization):
-    """ Visualize the Precision-Recall curve for a model.
+    """Visualize the Precision-Recall curve for a model.
 
     Parameters:
         dataset (Dataset): Dataset to evaluate model on
@@ -1686,7 +1953,15 @@ class ModelPR(BaseVisualization):
             or 'valid'. Default is 'test'."""
 
     @log_arguments
-    def __init__(self, dataset: BaseDataset, model: BaseModel, *args, log=True, model_name=None, **kwargs):
+    def __init__(
+        self,
+        dataset: BaseDataset,
+        model: BaseModel,
+        *args,
+        log=True,
+        model_name=None,
+        **kwargs,
+    ):
         self.dataset = dataset
         self.model = model
 
@@ -1698,11 +1973,20 @@ class ModelPR(BaseVisualization):
         if isinstance(y_true, pd.Series):
             y_true = y_true.tolist()
         precision, recall, thresholds = metrics.precision_recall_curve(y_true, preds)
-        ix = np.sort(np.random.choice(np.arange(len(precision)), size=1000, replace=True))
-        self.df = pd.DataFrame({"X": recall[ix], "Y": precision[ix],})
+        ix = np.sort(
+            np.random.choice(np.arange(len(precision)), size=1000, replace=True)
+        )
+        self.df = pd.DataFrame(
+            {
+                "X": recall[ix],
+                "Y": precision[ix],
+            }
+        )
 
         self.score = metrics.auc(recall, precision)
-        self.baseline = sum(self.dataset.test_dataset[1])/len(self.dataset.test_dataset[1])
+        self.baseline = sum(self.dataset.test_dataset[1]) / len(
+            self.dataset.test_dataset[1]
+        )
 
         if model_name is None:
             self.model_name = model_name_from_params(oce.parameterize(model))
@@ -1713,7 +1997,14 @@ class ModelPR(BaseVisualization):
 
     @staticmethod
     def get_attributes():
-        return [{"Select a Model/Dataset": [["model", "modelSelector"], ["dataset", "datasetSelector"],]}]
+        return [
+            {
+                "Select a Model/Dataset": [
+                    ["model", "modelSelector"],
+                    ["dataset", "datasetSelector"],
+                ]
+            }
+        ]
 
     @property
     def JS_NAME(self) -> str:
@@ -1726,25 +2017,27 @@ class ModelPR(BaseVisualization):
         d["baseline"] = self.baseline
         return d
 
-class BaseErrorWaterfall(BaseVisualization):
-    """ Visualize the error waterfall for a base boosting model.
 
-   Args:
-        model (BaseBoosting): Model to evaluate on. must be base boosting model.
-        x_data (Union[pd.DataFrame, np.ndarray]): Data to predict on using the model
-        y_data (Union[pd.Series, list, np.ndarray], optional): True values to compare to. Defaults to None. If None, then the waterfall plot will be for residuals.
-        normalization (bool, optional): If the data is normalized. Defaults to False.
+class BaseErrorWaterfall(BaseVisualization):
+    """Visualize the error waterfall for a base boosting model.
+
+    Args:
+         model (BaseBoosting): Model to evaluate on. must be base boosting model.
+         x_data (Union[pd.DataFrame, np.ndarray]): Data to predict on using the model
+         y_data (Union[pd.Series, list, np.ndarray], optional): True values to compare to. Defaults to None. If None, then the waterfall plot will be for residuals.
+         normalization (bool, optional): If the data is normalized. Defaults to False.
     """
 
     @log_arguments
     def __init__(
-        self, 
-        model: BaseBoosting, 
-        x_data: Union[pd.DataFrame, np.ndarray], 
-        *y_data: Union[pd.Series, list, np.ndarray], 
-        normalization = False, 
-        log=True, 
-        **kwargs):
+        self,
+        model: BaseBoosting,
+        x_data: Union[pd.DataFrame, np.ndarray],
+        *y_data: Union[pd.Series, list, np.ndarray],
+        normalization=False,
+        log=True,
+        **kwargs,
+    ):
 
         self.model = model
         self.x_data = x_data
@@ -1755,7 +2048,7 @@ class BaseErrorWaterfall(BaseVisualization):
         self.normalization = normalization
         super().__init__(log=False)
         self.packages += ["plotly"]
-        
+
         self.df = pd.DataFrame({})
 
     def get_data(self) -> dict:
@@ -1763,9 +2056,11 @@ class BaseErrorWaterfall(BaseVisualization):
 
         Returns:
             dict: Data for visualization."""
-        predictions = self.model.predict(self.x_data, waterfall = True, normalize = self.normalization)
-        data = self.model._waterfall(y_data = self.y_data, normalize = self.normalization)        
- 
+        predictions = self.model.predict(
+            self.x_data, waterfall=True, normalize=self.normalization
+        )
+        data = self.model._waterfall(y_data=self.y_data, normalize=self.normalization)
+
         diffs = [j - i for i, j in zip(data, data[1:])]
         diffs.insert(0, data[0])
         diffs.append(0)
@@ -1774,19 +2069,19 @@ class BaseErrorWaterfall(BaseVisualization):
             model_names = ["Model " + str(i) for i in range(1, len(data))]
             model_names.insert(0, "Dataset Baseline")
         else:
-            model_names = ["Model " + str(i+1) for i in range(1, len(data))]
+            model_names = ["Model " + str(i + 1) for i in range(1, len(data))]
             model_names.insert(0, "Model 1 Baseline")
         model_names.append("Boosted Model")
 
-        self.df['diffs'] = diffs
-        self.df['model_names'] = model_names
+        self.df["diffs"] = diffs
+        self.df["model_names"] = model_names
 
-        text = [f'{val:.2f}' for val in diffs]
-        text[-1] = f'{data[-1]:.2f}'
-        self.df['text'] = text
+        text = [f"{val:.2f}" for val in diffs]
+        text[-1] = f"{data[-1]:.2f}"
+        self.df["text"] = text
 
-        w_type = ['relative' for val in diffs]
-        w_type[-1] = 'total'
-        self.df['w_type'] = w_type
+        w_type = ["relative" for val in diffs]
+        w_type[-1] = "total"
+        self.df["w_type"] = w_type
 
         return self.df.to_dict("l")

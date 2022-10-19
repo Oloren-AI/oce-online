@@ -22,8 +22,15 @@ with oce.Remote("http://api.oloren.ai:5000", debug=True) as sid:
 
     model = oce.BaseBoosting(
         [
-            oce.RandomForestModel(oce.DescriptastorusDescriptor("rdkit2dnormalized"), n_estimators=1),
-            oce.BaseTorchGeometricModel(oce.TLFromCheckpoint("default"), batch_size=8, epochs=1, preinitialized=True),
+            oce.RandomForestModel(
+                oce.DescriptastorusDescriptor("rdkit2dnormalized"), n_estimators=1
+            ),
+            oce.BaseTorchGeometricModel(
+                oce.TLFromCheckpoint("default"),
+                batch_size=8,
+                epochs=1,
+                preinitialized=True,
+            ),
             oce.RandomForestModel(oce.OlorenCheckpoint("default"), n_estimators=1),
         ]
     )
@@ -34,4 +41,5 @@ with oce.Remote("http://api.oloren.ai:5000", debug=True) as sid:
     oce.save(model, "model.oce")
     _ = oce.load("model.oce")
     import os
+
     os.remove("model.oce")

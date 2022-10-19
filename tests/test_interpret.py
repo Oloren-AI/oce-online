@@ -11,10 +11,12 @@ from rdkit import Chem
 __author__ = "Oloren AI"
 __copyright__ = "Oloren AI"
 
+
 def remote(func):
     def wrapper(*args, **kwargs):
         with oce.Remote("http://api.oloren.ai:5000") as remote:
             func(*args, **kwargs)
+
     return wrapper
 
 

@@ -37,7 +37,9 @@ class BaseDataset(BaseClass):
     ):
 
         if name is None:
-            code = base64.urlsafe_b64encode(hashlib.md5(str(data).encode("utf-8")).digest())[:16].decode("utf-8")
+            code = base64.urlsafe_b64encode(
+                hashlib.md5(str(data).encode("utf-8")).digest()
+            )[:16].decode("utf-8")
             self.name = f"Dataset-{code}"
         else:
             self.name = name
@@ -76,7 +78,9 @@ class BaseDataset(BaseClass):
         Returns:
             tuple: (train_data, val_data, test_data)
         """
-        assert "split" in self.data.columns, "Dataset not split yet, please use a splitter or define the split column"
+        assert (
+            "split" in self.data.columns
+        ), "Dataset not split yet, please use a splitter or define the split column"
         return self.data["split"]
 
     @property
@@ -97,14 +101,18 @@ class BaseDataset(BaseClass):
             pd.DataFrame: The validation data
 
         """
-        assert "split" in self.data.columns, "Dataset not split yet, please use a splitter or define the split column"
+        assert (
+            "split" in self.data.columns
+        ), "Dataset not split yet, please use a splitter or define the split column"
         valid = self.data[self.data["split"] == "valid"]
         return valid[self.input_cols], valid[self.property_col]
 
     @property
     def trainval_dataset(self):
         """Returns the train and validation dataset"""
-        assert "split" in self.data.columns, "Dataset not split yet, please use a splitter or define the split column"
+        assert (
+            "split" in self.data.columns
+        ), "Dataset not split yet, please use a splitter or define the split column"
         train = self.data[self.data["split"] == "train"]
         val = self.data[self.data["split"] == "valid"]
         trainval = pd.concat([train, val])
@@ -119,13 +127,19 @@ class BaseDataset(BaseClass):
             pd.DataFrame: The test data
 
         """
-        assert "split" in self.data.columns, "Dataset not split yet, please use a splitter or define the split column"
+        assert (
+            "split" in self.data.columns
+        ), "Dataset not split yet, please use a splitter or define the split column"
         test = self.data[self.data["split"] == "test"]
         return test[self.input_cols], test[self.property_col]
 
     @property
     def size(self):
-        return (len(self.train_dataset[0]), len(self.valid_dataset[0]), len(self.test_dataset[0]))
+        return (
+            len(self.train_dataset[0]),
+            len(self.valid_dataset[0]),
+            len(self.test_dataset[0]),
+        )
 
     def transform(self, dataset: Self):
         """Combines this dataset with the passed dataset object"""
@@ -202,7 +216,9 @@ class DatasetFromCDDSearch(BaseDataset):
         update (bool): Whether or no to update the cached dataset by redoing the CDD search"""
 
     @log_arguments
-    def __init__(self, search_id, cache_file_path=None, update=True, log=True, **kwargs):
+    def __init__(
+        self, search_id, cache_file_path=None, update=True, log=True, **kwargs
+    ):
 
         if cache_file_path is None:
             cache_file_path = f"{search_id}.csv"
@@ -223,7 +239,9 @@ class DatasetFromCDDSearch(BaseDataset):
         Parameters:
         search_id (str): The ID of the saved CDD search to use.
         """
-        base_url = f"https://app.collaborativedrug.com/api/v1/vaults/{oce.CONFIG['VAULT_ID']}/"
+        base_url = (
+            f"https://app.collaborativedrug.com/api/v1/vaults/{oce.CONFIG['VAULT_ID']}/"
+        )
         headers = {"X-CDD-token": f"{oce.CONFIG['CDD_TOKEN']}"}
         url = base_url + f"searches/{search_id}"
 
@@ -238,7 +256,9 @@ class DatasetFromCDDSearch(BaseDataset):
         export_id (str): The unique export ID of the dataset searched for
 
         """
-        base_url = f"https://app.collaborativedrug.com/api/v1/vaults/{oce.CONFIG['VAULT_ID']}/"
+        base_url = (
+            f"https://app.collaborativedrug.com/api/v1/vaults/{oce.CONFIG['VAULT_ID']}/"
+        )
         headers = {"X-CDD-token": f"{oce.CONFIG['CDD_TOKEN']}"}
         url = base_url + f"export_progress/{export_id}"
 
@@ -253,7 +273,9 @@ class DatasetFromCDDSearch(BaseDataset):
         export_id (str): The unique export ID of the dataset searched for
 
         """
-        base_url = f"https://app.collaborativedrug.com/api/v1/vaults/{oce.CONFIG['VAULT_ID']}/"
+        base_url = (
+            f"https://app.collaborativedrug.com/api/v1/vaults/{oce.CONFIG['VAULT_ID']}/"
+        )
         headers = {"X-CDD-token": f"{oce.CONFIG['CDD_TOKEN']}"}
         url = base_url + f"exports/{export_id}"
 
@@ -304,7 +326,9 @@ class CleanStructures(BaseDatasetTransform):
                 return None
 
         start_num = len(dataset.data)
-        dataset.data[dataset.structure_col] = dataset.data[dataset.structure_col].apply(lambda x: try_clean(x))
+        dataset.data[dataset.structure_col] = dataset.data[dataset.structure_col].apply(
+            lambda x: try_clean(x)
+        )
         dataset.data = dataset.data.dropna(subset=[dataset.structure_col])
         if hasattr(dataset, "property_col") and not dataset.property_col is None:
             dataset.data = dataset.data.dropna(subset=[dataset.property_col])

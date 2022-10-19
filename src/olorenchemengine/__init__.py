@@ -18,6 +18,63 @@ except PackageNotFoundError:  # pragma: no cover
 finally:
     del version, PackageNotFoundError
 
+
+_OPTIONAL_IMPORTS_FOR_OCE_ONLINE = [
+    "sklearn",
+    "torch",
+    "torch_geometric",
+    "torch_scatter",
+    "torch_sparse",
+    "torch_cluster",
+    "torch_spline_conv",
+    "rdkit",
+    "sklearn.metrics",
+    "scipy",
+    "scipy.stats",
+    "joblib",
+    "sklearn.model_selection",
+    "tqdm",
+    "sklearn.preprocessing",
+    "rdkit.Chem",
+    "torch.nn",
+    "torch_geometric.nn",
+    "torch_geometric.data",
+    "torch.optim",
+    "torch_geometric.utils",
+    "torch.nn.functional",
+    "torch_geometric.nn.inits",
+    "rdkit.DataStructs",
+    "rdkit.DataStructs.cDataStructs",
+    "rdkit.Chem.AtomPairs",
+    "rdkit.Chem.AtomPairs.Sheridan",
+    "rdkit.Chem.Pharm2D",
+    "torch_geometric.loader",
+    "torch_geometric.data.data",
+    "torch.utils",
+    "torch.utils.data",
+    "torch.autograd",
+    "rdkit.Chem.rdchem",
+    "pytorch_lightning",
+    "rdkit.Chem.Scaffolds",
+    "PIL",
+    "selfies",
+    "sklearn.cross_decomposition",
+    "sklearn.decomposition",
+    "sklearn.neighbors",
+    "sklearn.manifold",
+    "hyperopt",
+    "hyperopt.pyll",
+]
+
+for imp in _OPTIONAL_IMPORTS_FOR_OCE_ONLINE:
+    try:
+        __import__(imp)
+    except ImportError:
+        import sys
+        from unittest.mock import MagicMock
+
+        sys.modules[imp] = MagicMock()
+
 from rdkit import RDLogger
 
 RDLogger.DisableLog("rdApp.*")
@@ -48,7 +105,13 @@ if os.path.exists(CONFIG_PATH):
     with open(CONFIG_PATH) as f:
         CONFIG_ = json.load(f)
 else:
-    CONFIG_ = {"MAP_LOCATION": "cpu", "USE_CUDA": False, "CDD_TOKEN": None, "VAULT_ID": None, "NUM_WORKERS": 4}
+    CONFIG_ = {
+        "MAP_LOCATION": "cpu",
+        "USE_CUDA": False,
+        "CDD_TOKEN": None,
+        "VAULT_ID": None,
+        "NUM_WORKERS": 4,
+    }
     with open(CONFIG_PATH, "w+") as f:
         json.dump(CONFIG_, f)
 
@@ -99,9 +162,12 @@ update_config()
 
 
 def ExampleDataFrame():
-    return pd.read_csv("https://storage.googleapis.com/oloren-public-data/sample-csvs/sample_data3.csv")
+    return pd.read_csv(
+        "https://storage.googleapis.com/oloren-public-data/sample-csvs/sample_data3.csv"
+    )
 
 
+from .internal import *
 from .base_class import *
 from .basics import *
 from .ensemble import *
@@ -120,7 +186,11 @@ from .hyperparameters import *
 
 def ExampleDataset():
     dataset = (
-        BaseDataset(data=ExampleDataFrame().to_csv(), structure_col="Smiles", property_col="pChEMBL Value")
+        BaseDataset(
+            data=ExampleDataFrame().to_csv(),
+            structure_col="Smiles",
+            property_col="pChEMBL Value",
+        )
         + RandomSplit()
     )
     return dataset
@@ -128,8 +198,12 @@ def ExampleDataset():
 
 def BACEDataset():
     df = pd.read_csv(download_public_file("MoleculeNet/load_bace_regression.csv"))
-    df["split"] = df["split"].replace({"Train": "train", "Valid": "valid", "Test": "test"})
-    return oce.BaseDataset(data=df.to_csv(), structure_col="smiles", property_col="pIC50")
+    df["split"] = df["split"].replace(
+        {"Train": "train", "Valid": "valid", "Test": "test"}
+    )
+    return oce.BaseDataset(
+        data=df.to_csv(), structure_col="smiles", property_col="pIC50"
+    )
 
 
 def test_oce():
@@ -139,8 +213,12 @@ def test_oce():
 
     model = BaseBoosting(
         [
-            RandomForestModel(DescriptastorusDescriptor("rdkit2dnormalized"), n_estimators=1),
-            BaseTorchGeometricModel(TLFromCheckpoint("default"), batch_size=8, epochs=1, preinitialized=True),
+            RandomForestModel(
+                DescriptastorusDescriptor("rdkit2dnormalized"), n_estimators=1
+            ),
+            BaseTorchGeometricModel(
+                TLFromCheckpoint("default"), batch_size=8, epochs=1, preinitialized=True
+            ),
             RandomForestModel(OlorenCheckpoint("default"), n_estimators=1),
         ]
     )

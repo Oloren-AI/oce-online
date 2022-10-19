@@ -58,7 +58,9 @@ class BaseModelManager(BaseClass):
         self.best_model = None
         self.best_primary_metric = float("inf")
 
-        self.model_database = pd.DataFrame(columns=["Model Name", "Model Parameters", "Fitting Time"] + self.metrics)
+        self.model_database = pd.DataFrame(
+            columns=["Model Name", "Model Parameters", "Fitting Time"] + self.metrics
+        )
 
         self.file_path = file_path
         if not self.file_path is None and os.path.exists(self.file_path):
@@ -74,7 +76,9 @@ class BaseModelManager(BaseClass):
     def primary_metric(self):
         return self.primary_metric
 
-    def run(self, models: Union[BaseModel, List[BaseModel]], return_models: bool = False):
+    def run(
+        self, models: Union[BaseModel, List[BaseModel]], return_models: bool = False
+    ):
         """Runs the model on the dataset and saves the results to the model_database.
 
         Parameters:
@@ -108,7 +112,9 @@ class BaseModelManager(BaseClass):
             y_pred = model.predict(eval_set[0])
             y = eval_set[1]
 
-            stats = {metric: metric_functions[metric](y, y_pred) for metric in self.metrics}
+            stats = {
+                metric: metric_functions[metric](y, y_pred) for metric in self.metrics
+            }
 
             if not self.file_path is None and os.path.exists(self.file_path):
                 with open(self.file_path, "rb") as f:
@@ -147,9 +153,13 @@ class BaseModelManager(BaseClass):
 
             # Using metric direction,
             if metric_direction[self.primary_metric] == "higher":
-                primary_metric_outputs.append(-1 * metric_functions[self.primary_metric](y, y_pred))
+                primary_metric_outputs.append(
+                    -1 * metric_functions[self.primary_metric](y, y_pred)
+                )
             else:
-                primary_metric_outputs.append(metric_functions[self.primary_metric](y, y_pred))
+                primary_metric_outputs.append(
+                    metric_functions[self.primary_metric](y, y_pred)
+                )
             if primary_metric_outputs[-1] < self.best_primary_metric:
                 self.best_model = model
                 self.best_primary_metric = primary_metric_outputs[-1]
@@ -199,7 +209,12 @@ class ModelManager(BaseModelManager):
     ):
         self.name = oce.model_name_from_model(self)
         super().__init__(
-            dataset, metrics, file_path=file_path, primary_metric=primary_metric, verbose=verbose, log=False
+            dataset,
+            metrics,
+            file_path=file_path,
+            primary_metric=primary_metric,
+            verbose=verbose,
+            log=False,
         )
 
     def _save(self) -> dict:
@@ -248,9 +263,13 @@ class SheetsModelManager(BaseModelManager):
         import gspread
 
         if "GOOGLE_CREDENTIALS_FILENAME" in oce.CONFIG:
-            self.gc = gspread.oauth(credentials_filename=oce.CONFIG["GOOGLE_CREDENTIALS_FILENAME"],)
+            self.gc = gspread.oauth(
+                credentials_filename=oce.CONFIG["GOOGLE_CREDENTIALS_FILENAME"],
+            )
         elif "GOOGLE_SERVICE_ACC_FILENAME" in oce.CONFIG:
-            self.gc = gspread.service_account(filename=oce.CONFIG["GOOGLE_SERVICE_ACC_FILENAME"])
+            self.gc = gspread.service_account(
+                filename=oce.CONFIG["GOOGLE_SERVICE_ACC_FILENAME"]
+            )
         else:
             raise Exception(
                 "GOOGLE_CREDENTIALS_FILENAME and GOOGLE_SERVICE_ACC_FILENAME not found in CONFIG, please set one of them.\
@@ -269,11 +288,20 @@ class SheetsModelManager(BaseModelManager):
 
         self.email = email
 
-        super().__init__(dataset, metrics, file_path=file_path, primary_metric=primary_metric, log=False)
+        super().__init__(
+            dataset,
+            metrics,
+            file_path=file_path,
+            primary_metric=primary_metric,
+            log=False,
+        )
 
     def _save(self) -> dict:
         self.wb.share(self.email, perm_type="anyone", role="writer")
-        self.ws.update([self.model_database.columns.values.tolist()] + self.model_database.values.tolist())
+        self.ws.update(
+            [self.model_database.columns.values.tolist()]
+            + self.model_database.values.tolist()
+        )
         self.url = f"https://docs.google.com/spreadsheets/d/{self.wb._properties['id']}/edit#gid=0"
         print(f"Saved to Google Sheets. Please visit {self.url} to view the results.")
 
@@ -325,13 +353,23 @@ class FirebaseModelManager(BaseModelManager):
         from firebase_admin import firestore
 
         if "FIREBASE_CREDENTIALS_CERTIFICATE" in oce.CONFIG:
-            cred = credentials.Certificate(oce.CONFIG["FIREBASE_CREDENTIALS_CERTIFICATE"])
+            cred = credentials.Certificate(
+                oce.CONFIG["FIREBASE_CREDENTIALS_CERTIFICATE"]
+            )
             firebase_admin.initialize_app(cred)
             self.db = firestore.client()
         else:
-            raise Exception("Firebase credentials in CONFIG were not found or not properly set. ")
+            raise Exception(
+                "Firebase credentials in CONFIG were not found or not properly set. "
+            )
 
-        super().__init__(dataset, metrics, file_path=file_path, primary_metric=primary_metric, log=False)
+        super().__init__(
+            dataset,
+            metrics,
+            file_path=file_path,
+            primary_metric=primary_metric,
+            log=False,
+        )
         self.uid = uid
 
     def run(self, models: Union[BaseModel, List[BaseModel]]):
@@ -361,14 +399,19 @@ class FirebaseModelManager(BaseModelManager):
         # create a new document in datasets
         dataset_ref = self.db.collection("datasets").document()
         dataset_ref.set(
-            {"uid": self.uid, "data": data_map,}
+            {
+                "uid": self.uid,
+                "data": data_map,
+            }
         )
 
         # check if userID is already in users, if not, create a new document in users
         user_ref = self.db.collection("users").document(self.uid)
         if not user_ref.get().exists:
             user_ref.set(
-                {"uid": self.uid,}
+                {
+                    "uid": self.uid,
+                }
             )
 
         for model in model_database.to_dict("index").values():
@@ -392,7 +435,11 @@ class FirebaseModelManager(BaseModelManager):
             # create a new document in models
             model_ref = self.db.collection("models").document()
             model_ref.set(
-                {"uid": self.uid, "did": dataset_ref.id, "data": model_map,}
+                {
+                    "uid": self.uid,
+                    "did": dataset_ref.id,
+                    "data": model_map,
+                }
             )
 
     def _save(self) -> dict:
