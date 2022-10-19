@@ -344,12 +344,22 @@ class _RemoteRuntime:
 
         response = None
 
+        _, execution = oas_connector.logging_db.collection("executions").add(
+            {
+                "uid": oas_connector.uid,
+                "sid": self.session_id,
+                "instructions": json.dumps(self.instruction_buffer),
+                "status": "Queued",
+            }
+        )
+
+        eid = execution.id
+
         response = requests.post(
             f"{self.remote_url}/firestore/run_remote/",
             params={
-                "instructions": json.dumps(self.instruction_buffer),
+                "eid": eid,
                 "uid": oas_connector.authenticate(),
-                "sid": self.session_id,
             },
             headers={
                 "accept": "application/json",
@@ -362,8 +372,6 @@ class _RemoteRuntime:
             raise ValueError(f"Error code on post to {self.remote_url} {response.status_code} - {response.text}. Length of instruction buffer: {len(json.dumps(self.instruction_buffer))}")
 
         response = response.json()
-
-        eid = response["data"]
 
         execution = None
 
