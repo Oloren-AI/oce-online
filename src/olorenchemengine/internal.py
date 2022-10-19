@@ -272,10 +272,17 @@ class _RemoteRuntime:
             return self.runner.get_remote_obj(remote_id)
 
     def add_instruction(self, instruction):
+        if len(json.dumps(self.instruction_buffer + [instruction])) > 30000:
+            print("Max buffer size reached, flushing...")
+            self.send_instructions_blocking()
+
+            if len(json.dumps(instruction)) > 30000:
+                print("The instruction is very large, attempting to send, but this may result in error.")
+                print("TODO: Implement chunking of very large instructions.")
+
         self.instruction_buffer.append(instruction)
 
-
-        if instruction["type"] == "CALL" or len(json.dumps(self.instruction_buffer)) > 30000:
+        if instruction["type"] == "CALL":
             x = self.send_instructions_blocking()
             if x is not None and isinstance(x, str):
                 return json.loads(x)
