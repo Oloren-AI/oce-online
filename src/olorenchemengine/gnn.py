@@ -276,7 +276,7 @@ class BaseTorchGeometricModel(BaseModel):
             accelerator="auto",
             max_epochs=self.epochs,
             auto_lr_find=auto_lr_find,
-            num_sanity_val_steps=0,
+            num_sanity_val_steps=0
         )
 
         super().__init__(log=False, **kwargs)
@@ -309,25 +309,9 @@ class BaseTorchGeometricModel(BaseModel):
         else:
             self.network.set_task_type("regression")
 
-        if self.network.hascollate_fn:
-            from torch.utils.data import DataLoader as TorchDataLoader
+        from torch_geometric.data import DataLoader as PyGDataLoader
 
-            dataloader = TorchDataLoader(
-                X_train,
-                batch_size=self.batch_size,
-                shuffle=True,
-                num_workers=oce.CONFIG["NUM_WORKERS"],
-                collate_fn=self.network.collate_fn,
-            )
-        else:
-            from torch_geometric.data import DataLoader as PyGDataLoader
-
-            dataloader = PyGDataLoader(
-                X_train,
-                batch_size=self.batch_size,
-                shuffle=True,
-                num_workers=oce.CONFIG["NUM_WORKERS"],
-            )
+        dataloader = PyGDataLoader(X_train, batch_size=self.batch_size, shuffle=True, num_workers=oce.CONFIG["NUM_WORKERS"])
 
         self.trainer.fit(self.network, dataloader)
 
