@@ -316,30 +316,6 @@ class _RemoteRuntime:
         return self.send_instructions_blocking()
 
     def send_instructions_blocking(self):
-
-        if len(json.dumps(self.instruction_buffer)) > 20000:
-            print("Max buffer size reached, running instructions separately...")
-
-            full_buffer = self.instruction_buffer
-            for cmd in full_buffer[:-1]:
-                self.instruction_buffer = [cmd]
-
-                if len(json.dumps(self.instruction_buffer)) > 20000:
-                    raise Exception("Instruction too large to send to remote.")
-
-                self.send_instructions_blocking()
-
-            self.instruction_buffer = [full_buffer[-1]]
-
-            if len(json.dumps(self.instruction_buffer)) > 20000:
-                raise Exception("Instruction too large to send to remote.")
-
-            return self.send_instructions_blocking()
-
-        if self.debug:
-            print("Sending instructions...")
-            print(json.dumps(_truncate_json(self.instruction_buffer), indent=4))
-
         import requests
 
         response = None
