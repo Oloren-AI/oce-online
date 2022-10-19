@@ -406,9 +406,13 @@ class Remote(object):
                 doc = oas_connector.logging_db.collection("sessions").document(self.session_id).get().to_dict()
                 if doc is not None:
                     for rid in doc["objects"]:
-                        oas_connector.storage.delete(
-                            f"{oas_connector.uid}/sessions/{self.session_id}/{rid}.oce", oas_connector.uid_token
-                        )
+                        try:
+                            oas_connector.storage.delete(
+                                f"{oas_connector.uid}/sessions/{self.session_id}/{rid}.oce", oas_connector.uid_token
+                            )
+                        except:
+                            import logging
+                            logging.warning(f"Unable to delete remote object {rid} from session {self.session_id}")
                     oas_connector.logging_db.collection("sessions").document(self.session_id).delete()
 
 
