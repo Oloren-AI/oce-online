@@ -388,6 +388,8 @@ class TorchMLP(BaseModel):
             self.norm_layer = None
 
         self.dropout = dropout
+        self.network = "Not Fitted Yet"
+
         super().__init__(representation, log=False)
 
     def preprocess(self, X, y, fit=False):
