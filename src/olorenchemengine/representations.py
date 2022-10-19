@@ -835,8 +835,7 @@ class DescriptastorusDescriptor(BaseCompoundVecRepresentation):
     def __init__(self, name, *args, log=True, scale=None, **kwargs):
         self.name = name
 
-        from descriptastorus.descriptors.DescriptorGenerator import \
-            MakeGenerator
+        from descriptastorus.descriptors.DescriptorGenerator import MakeGenerator
 
         self.generator = MakeGenerator((name,))
         super().__init__(log=False, scale=scale, **kwargs)
@@ -1425,8 +1424,7 @@ class OlorenCheckpoint(BaseCompoundVecRepresentation):
         if not isinstance(mol, Chem.Mol):
             mol = Chem.MolFromSmiles(mol)
 
-        from ogb.utils.features import (atom_to_feature_vector,
-                                        bond_to_feature_vector)
+        from ogb.utils.features import atom_to_feature_vector, bond_to_feature_vector
 
         # Generate nodes of the graph
         atom_features_list = []

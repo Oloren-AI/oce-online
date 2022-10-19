@@ -3,9 +3,14 @@
 
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import (GlobalAttention, MessagePassing, Set2Set,
-                                global_add_pool, global_max_pool,
-                                global_mean_pool)
+from torch_geometric.nn import (
+    GlobalAttention,
+    MessagePassing,
+    Set2Set,
+    global_add_pool,
+    global_max_pool,
+    global_mean_pool,
+)
 from torch_geometric.nn.inits import glorot, zeros
 from torch_geometric.utils import add_self_loops, degree, softmax
 from torch_scatter import scatter_add

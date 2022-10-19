@@ -7,11 +7,13 @@ from tqdm import tqdm
 import olorenchemengine as oce
 from olorenchemengine.base_class import BaseModel, log_arguments
 from olorenchemengine.internal import download_public_file
-from olorenchemengine.representations import (AtomFeaturizer,
-                                              BaseVecRepresentation,
-                                              BondFeaturizer,
-                                              SMILESRepresentation,
-                                              TorchGeometricGraph)
+from olorenchemengine.representations import (
+    AtomFeaturizer,
+    BaseVecRepresentation,
+    BondFeaturizer,
+    SMILESRepresentation,
+    TorchGeometricGraph,
+)
 
 ATOM_LIST = list(range(1, 119))
 CHIRALITY_LIST = [
@@ -106,8 +108,11 @@ class MolCLR(BaseModel):
 
         import torch
         import torch.nn.functional as F
-        from sklearn.metrics import (mean_absolute_error, mean_squared_error,
-                                     roc_auc_score)
+        from sklearn.metrics import (
+            mean_absolute_error,
+            mean_squared_error,
+            roc_auc_score,
+        )
         from torch import nn
         from torch.optim.lr_scheduler import CosineAnnealingLR
         from torch.utils.tensorboard import SummaryWriter
@@ -255,8 +260,11 @@ class MolCLRVecRep(BaseVecRepresentation):
 
         import torch
         import torch.nn.functional as F
-        from sklearn.metrics import (mean_absolute_error, mean_squared_error,
-                                     roc_auc_score)
+        from sklearn.metrics import (
+            mean_absolute_error,
+            mean_squared_error,
+            roc_auc_score,
+        )
         from torch import nn
         from torch.optim.lr_scheduler import CosineAnnealingLR
         from torch.utils.tensorboard import SummaryWriter

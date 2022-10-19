@@ -7,6 +7,7 @@ For more information visit the github repository: https://github.com/EBjerrum/pI
 
 from numpy import abs as np_abs
 from numpy import argmin, unique
+
 # RuleTables
 from rdkit import Chem
 from rdkit.Chem import AllChem

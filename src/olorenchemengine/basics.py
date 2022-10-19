@@ -14,8 +14,10 @@ from rdkit import Chem
 from sklearn.model_selection import RandomizedSearchCV
 
 import olorenchemengine as oce
-from olorenchemengine.representations import (BaseCompoundVecRepresentation,
-                                              BaseVecRepresentation)
+from olorenchemengine.representations import (
+    BaseCompoundVecRepresentation,
+    BaseVecRepresentation,
+)
 
 from .base_class import *
 
@@ -110,8 +112,7 @@ class KBestLinearRegression(BaseEstimator):
 
     @log_arguments
     def __init__(self, k=1, *args, **lwargs):
-        from sklearn.feature_selection import (SelectKBest,
-                                               mutual_info_regression)
+        from sklearn.feature_selection import SelectKBest, mutual_info_regression
         from sklearn.linear_model import LinearRegression
         from sklearn.pipeline import Pipeline
 
@@ -220,8 +221,7 @@ class AutoRandomForestModel(BaseSKLearnModel, BaseObject):
     def __init__(
         self, representation, n_iter=100, scoring=None, verbose=2, cv=5, **kwargs
     ):
-        from sklearn.ensemble import (RandomForestClassifier,
-                                      RandomForestRegressor)
+        from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
         regressor = self.autofit(RandomForestRegressor(), n_iter, cv, scoring, verbose)
         classifier = self.autofit(
@@ -999,8 +999,7 @@ class FeaturesClassification(BaseModel):
         """
         self.numeric_cols = []
         if config == "lineardiscriminant":
-            from sklearn.discriminant_analysis import \
-                LinearDiscriminantAnalysis
+            from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
             self.obj = LinearDiscriminantAnalysis()
         elif config == "gaussiannb":
@@ -1008,8 +1007,7 @@ class FeaturesClassification(BaseModel):
 
             self.obj = GaussianNB()
         elif config == "quadraticdiscriminant":
-            from sklearn.discriminant_analysis import \
-                QuadraticDiscriminantAnalysis
+            from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
             self.obj = QuadraticDiscriminantAnalysis()
         elif config == "knearestneighbors":

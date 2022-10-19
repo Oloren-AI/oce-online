@@ -179,8 +179,11 @@ class GlobalPool(nn.Module):
     def __init__(self, fun, cat_size=False, cat_candidates=False):
         super().__init__()
         self.cat_size = cat_size
-        from torch_geometric.nn import (global_add_pool, global_max_pool,
-                                        global_mean_pool)
+        from torch_geometric.nn import (
+            global_add_pool,
+            global_max_pool,
+            global_mean_pool,
+        )
 
         if fun.lower() == "add":
             self.fun = global_add_pool
@@ -193,8 +196,11 @@ class GlobalPool(nn.Module):
     def forward(self, batch):
         x, b = batch.x, batch.batch
         pooled = self.fun(x, b, size=batch.num_graphs)
-        from torch_geometric.nn import (global_add_pool, global_max_pool,
-                                        global_mean_pool)
+        from torch_geometric.nn import (
+            global_add_pool,
+            global_max_pool,
+            global_mean_pool,
+        )
 
         if self.cat_size:
             sizes = global_add_pool(

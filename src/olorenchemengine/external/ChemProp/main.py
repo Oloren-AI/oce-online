@@ -18,11 +18,13 @@ from torch_geometric.nn import global_mean_pool
 from torch_scatter import scatter_sum
 from tqdm import tqdm
 
-from olorenchemengine.base_class import (BaseModel, QuantileTransformer,
-                                         log_arguments)
+from olorenchemengine.base_class import BaseModel, QuantileTransformer, log_arguments
 from olorenchemengine.internal import mock_imports
-from olorenchemengine.representations import (AtomFeaturizer, BondFeaturizer,
-                                              TorchGeometricGraph)
+from olorenchemengine.representations import (
+    AtomFeaturizer,
+    BondFeaturizer,
+    TorchGeometricGraph,
+)
 
 
 class RevIndexedData(Data):

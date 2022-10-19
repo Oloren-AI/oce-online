@@ -7,8 +7,7 @@ import PIL
 import selfies as sf
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.DataStructs.cDataStructs import (BulkTanimotoSimilarity,
-                                            TanimotoSimilarity)
+from rdkit.DataStructs.cDataStructs import BulkTanimotoSimilarity, TanimotoSimilarity
 from tqdm import tqdm
 
 from .base_class import *

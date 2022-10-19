@@ -8,8 +8,7 @@ from torch.utils.data import DataLoader
 import olorenchemengine as oce
 from olorenchemengine.base_class import BaseModel, log_arguments
 from olorenchemengine.internal import download_public_file
-from olorenchemengine.representations import (BaseVecRepresentation,
-                                              SMILESRepresentation)
+from olorenchemengine.representations import BaseVecRepresentation, SMILESRepresentation
 
 from .operations import Seq2seqDataset, TrfmSeq2seq, WordVocab
 

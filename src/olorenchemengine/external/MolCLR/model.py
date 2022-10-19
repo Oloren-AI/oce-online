@@ -5,8 +5,13 @@ import torch.nn.functional as F
 import torch_sparse
 from torch import nn
 from torch.nn import LayerNorm, Linear, Parameter, ReLU
-from torch_geometric.nn import (GCNConv, MessagePassing, global_add_pool,
-                                global_max_pool, global_mean_pool)
+from torch_geometric.nn import (
+    GCNConv,
+    MessagePassing,
+    global_add_pool,
+    global_max_pool,
+    global_mean_pool,
+)
 from torch_geometric.utils import add_self_loops, degree, softmax
 from torch_geometric.utils.num_nodes import maybe_num_nodes
 from torch_scatter import scatter, scatter_add

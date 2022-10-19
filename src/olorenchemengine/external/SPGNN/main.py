@@ -17,17 +17,25 @@ from torch_geometric.data import DataLoader
 from tqdm import tqdm
 
 import olorenchemengine as oce
-from olorenchemengine.base_class import (BaseModel, QuantileTransformer,
-                                         log_arguments)
+from olorenchemengine.base_class import BaseModel, QuantileTransformer, log_arguments
 from olorenchemengine.internal import download_public_file, mock_imports
-from olorenchemengine.representations import (AtomFeaturizer,
-                                              BaseRepresentation,
-                                              BaseVecRepresentation,
-                                              BondFeaturizer,
-                                              TorchGeometricGraph)
+from olorenchemengine.representations import (
+    AtomFeaturizer,
+    BaseRepresentation,
+    BaseVecRepresentation,
+    BondFeaturizer,
+    TorchGeometricGraph,
+)
 
-from .model import (GNN, GlobalAttention, GNN_graphpred, Set2Set,
-                    global_add_pool, global_max_pool, global_mean_pool)
+from .model import (
+    GNN,
+    GlobalAttention,
+    GNN_graphpred,
+    Set2Set,
+    global_add_pool,
+    global_max_pool,
+    global_mean_pool,
+)
 
 allowable_features = {
     "possible_atomic_num_list": list(range(1, 119)),

@@ -12,9 +12,15 @@ from typing import Any, Callable, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import (average_precision_score, explained_variance_score,
-                             max_error, mean_absolute_error,
-                             mean_squared_error, r2_score, roc_auc_score)
+from sklearn.metrics import (
+    average_precision_score,
+    explained_variance_score,
+    max_error,
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
+    roc_auc_score,
+)
 
 import olorenchemengine as oce
 from olorenchemengine.internal import *
@@ -597,8 +603,9 @@ class BaseModel(BaseClass):
                 if return_ci:
                     result["ci"] = errors
                 if return_vis:
-                    from olorenchemengine.visualizations.visualization import \
-                        VisualizeError
+                    from olorenchemengine.visualizations.visualization import (
+                        VisualizeError,
+                    )
 
                     ci = self.error_model.quantile
                     result["vis"] = [
